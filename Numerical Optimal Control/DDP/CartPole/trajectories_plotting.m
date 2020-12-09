@@ -1,0 +1,1 @@
+TJ = dyn.TotalTraj;
