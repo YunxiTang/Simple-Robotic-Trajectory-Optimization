@@ -41,8 +41,8 @@ function [SOL] = DDP(x_0,x_star,t_f,N,dyn,cost,u_max,num_iter,alpha,stop_criteri
     normu = load('Norm_u.mat');
     u_ref = normu.u;
     for i=1:N-1
-%         u{i} = 2 * u_max .* rand(numel(u_max),1) - u_max;
-%         u{i} = 0.5 * u_max * cos(0.2 * i * dt);
+%             u{i} = 2 * u_max .* rand(numel(u_max),1) - u_max;
+%         u{i} = 0.5 * u_max * sin(0.2 * i * dt);
           u{i} = u_ref(i);
     end
     
@@ -69,8 +69,8 @@ function [SOL] = DDP(x_0,x_star,t_f,N,dyn,cost,u_max,num_iter,alpha,stop_criteri
             for k=1:N-1
                 % compute control update feed-forward and feed-back
                 % w/ regularzation
-                du_ff = -inv(Q_uu{k}+ 0 * eye(numel(u{k}))) * Q_u{k};
-                du_fb = -inv(Q_uu{k}+ 0 * eye(numel(u{k}))) * Q_ux{k} * (x_new{k} - x{k});
+                du_ff = -inv(Q_uu{k}+ 0.0 * eye(numel(u{k}))) * Q_u{k};
+                du_fb = -inv(Q_uu{k}+ 0.0 * eye(numel(u{k}))) * Q_ux{k} * (x_new{k} - x{k});
                 
 %                 limit feed-forward control modification with clamping
 %                 for m = 1:numel(u_max)
@@ -79,7 +79,7 @@ function [SOL] = DDP(x_0,x_star,t_f,N,dyn,cost,u_max,num_iter,alpha,stop_criteri
 %                 end
             
                 % update control
-                u{k} = u{k} + alpha / (k) .* (du_ff) + du_fb;
+                u{k} = u{k} + alpha / (1) .* (du_ff) + du_fb;
                 
                 % FORWARD SIMULATION: Compute next state in trajectory with new control
                 k1 = dyn.Dynamics(0, x_new{k},             u{k});

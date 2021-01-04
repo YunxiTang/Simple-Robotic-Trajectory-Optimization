@@ -28,19 +28,22 @@ dyn = Pendubot();
 
 % Initialize cost
 fprintf("Initializing quadratic cost function...\n")
-Q_f = 700 * eye(4);
-Q = 1 * eye(4);
-R = 0.1;
-cost = QuadraticCost_Barrier(Q_f, Q, R, u_max, -u_max);
+Q_f = 140 * eye(4);
+Q = [1000  0  0     0;
+     0     1000  0     0;
+     0     0  1000  0;
+     0     0     0  1000];
+R = 0.5;
+cost = QuadraticCost_Barrier(50*Q, Q/60, R, u_max, -u_max);
 
 % Max Number of DDP iterations
 num_iter = 500;
 
 % Stop criterion
-stop_criterion = 1e-5;
+stop_criterion = 1e-7;
 
 % DDP learning rate
-alpha = 1.0;
+alpha = 0.01;
 
 % Video framerate
 fps = 30;
@@ -73,7 +76,7 @@ for k = 1:N
     qd2(k) = sol.x{k}(4);
     u(k) = sol.u{k};
 end
-
+save('Norm_u.mat','u');
 %% Plot trajectories
 % Plot cart position history
 figure(1);hold on;
@@ -127,14 +130,14 @@ ax.TickLabelInterpreter = "latex";
 figure(5);hold on;
 pbaspect([5 3 1])
 hold on;
-plot(q1, q2,'m-.', 'Linewidth', 2);
+plot(q1, q2,'k-.', 'Linewidth', 2);
 plot(x_0(1), x_0(2), 'o', "MarkerFaceColor", "blue", ...
                           "MarkerEdgeColor", "blue");
 plot(x_star(1), x_star(2), 'o', "MarkerFaceColor", "green", ...
                                 "MarkerEdgeColor", "green")
 grid on;
-xlabel("Cart Position [m]", "Interpreter", "latex", "FontSize", 20);
-ylabel("Pole Angular [rad]", "Interpreter", "latex", "FontSize", 20);
+xlabel("$q_{1}$ [m]", "Interpreter", "latex", "FontSize", 20);
+ylabel("$q_{2}$ [rad]", "Interpreter", "latex", "FontSize", 20);
 ax = gca();
 ax.FontSize = 16;
 ax.TickLabelInterpreter = "latex";
@@ -189,4 +192,4 @@ for i=1:length(q1)
     x(4,:) = qd2;
 end
 [p1,p2] = kinematics(dyn.l1, dyn.l2, x);
-runAnimation(sol.t, p1, p2);
+% runAnimation(sol.t, p1, p2);

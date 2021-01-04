@@ -49,14 +49,14 @@ classdef Pendubot < Robot
                 C12 = -obj.m2*obj.l1*obj.lc2*sin(q2)*dq2;
                 C21 = obj.m2*obj.l1*obj.lc2*sin(q2)*dq1;
                 C22 = 0;
-                C = 1.1*[C11 C12;
+                C = 1.0*[C11 C12;
                      C21 C22];
 
                 G1 = obj.m1*obj.g*obj.lc1*sin(q1)+obj.m1*obj.g*(obj.l1*sin(q1)+obj.lc2*sin(q1+q2));
                 G2 = obj.m2*obj.g*obj.lc2*sin(q1+q2);
                 G = [G1;G2];
-                F = 0.9*[obj.b1 0;
-                     0 obj.b2];
+                F = 1.0*[obj.b1 0;
+                         0 obj.b2];
                 B = [1;0];
         end
         
