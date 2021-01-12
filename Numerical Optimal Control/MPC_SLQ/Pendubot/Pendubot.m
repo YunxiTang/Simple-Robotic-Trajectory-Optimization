@@ -23,7 +23,7 @@ classdef Pendubot < Robot
     methods
         function obj = Pendubot()
             % model parameters
-            disp('Creating A Pendubot Model...');
+            disp('[INFO]: Creating A Pendubot Model.');
         end
         
         function [M,C,G,F,B] = Sim_EoM(obj,x)

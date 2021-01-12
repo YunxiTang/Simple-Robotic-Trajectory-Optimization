@@ -47,10 +47,10 @@ function [SOL,K_f,x_rep] = ddp_tracking(x_now,x_ref,u_ref,n_h,model,cost,K_lqr,.
         if i > 1
             for k=1:n_h-1
                 % compute control update feed-forward and feed-back
-                % w/ regularzation
-                du_ff = -inv(Q_uu{k}+ 0.1 * eye(numel(u{k}))) * Q_u{k};
-                du_fb = -inv(Q_uu{k}+ 0.1 * eye(numel(u{k}))) * Q_ux{k} * (x_new{k} - x{k});
-                K{k} = -inv(Q_uu{k}+  0.1 * eye(numel(u{k}))) * Q_ux{k};
+                % w/ regularzation in case u change a lot
+                du_ff = -inv(Q_uu{k}+ 2.5 * eye(numel(u{k}))) * Q_u{k};
+                du_fb = -inv(Q_uu{k}+ 2.5 * eye(numel(u{k}))) * Q_ux{k} * (x_new{k} - x{k});
+                K{k} = -inv(Q_uu{k}+  2.5 * eye(numel(u{k}))) * Q_ux{k};
                 % limit feed-forward control modification with clamping
                 for m = 1:numel(u_max)
                     du_ff(m) = min(u_max(m), max(-u_max(m), ...
@@ -107,7 +107,7 @@ function [SOL,K_f,x_rep] = ddp_tracking(x_now,x_ref,u_ref,n_h,model,cost,K_lqr,.
         % when to stop
         if i > 1
             if (J(i-1)-J(i)) <= stop_criterion 
-                fprintf('~~~~~~Cost Converge at %d-th iteration with ... Cost of %f. ~~~~~~~~\n',i,J(i));
+                fprintf('[INFO]: Cost Converge at %d-th iteration with Cost of %7f.\n',i,J(i));
                 break
             end
         end
