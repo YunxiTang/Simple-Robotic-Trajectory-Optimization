@@ -8,6 +8,7 @@ function [SOL,K_f,x_rep] = ddp_tracking(x_now,x_ref,u_ref,n_h,model,cost,K_lqr,.
 %%%        n_h:         length of horizon          [1]
 %%%        model:       robot model                [class]
 %%%        cost:        cost model                 [class]
+%%%        K_lqr:       ref feedback policy        [nx, n_h]
 %%%        u_max:       torque limitation          [nu,1]
 %%%        num_iter:    maximum iteration times    [1]
 %%%        alpha:       factor for line search     [1]
@@ -52,10 +53,10 @@ function [SOL,K_f,x_rep] = ddp_tracking(x_now,x_ref,u_ref,n_h,model,cost,K_lqr,.
                 du_fb = -inv(Q_uu{k}+ 2.5 * eye(numel(u{k}))) * Q_ux{k} * (x_new{k} - x{k});
                 K{k} = -inv(Q_uu{k}+  2.5 * eye(numel(u{k}))) * Q_ux{k};
                 % limit feed-forward control modification with clamping
-                for m = 1:numel(u_max)
-                    du_ff(m) = min(u_max(m), max(-u_max(m), ...
-                                             du_ff(m) + u{k}(m))) - u{k}(m);
-                end
+%                 for m = 1:numel(u_max)
+%                     du_ff(m) = min(u_max(m), max(-u_max(m), ...
+%                                              du_ff(m) + u{k}(m))) - u{k}(m);
+%                 end
                 % update control
                 u{k} = u{k} + alpha / (1.5) .* (du_ff) + du_fb;
                 % FORWARD SIMULATION: Compute next state in trajectory with new control

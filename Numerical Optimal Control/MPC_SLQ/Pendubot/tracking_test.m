@@ -101,10 +101,10 @@ colorbar;
 im.AlphaData = .7;
 title('Fitted Gains');
 %%
-x_init = [0.0;0.0;0.0;0.0] + 0.1 * randn(4,1);
+x_init = [0.5;0.0;0.0;0.0] + 0.3 * randn(4,1);
 
 Q_ddp = diag([100 100 100 100]);
-R_ddp = [0.5];
+R_ddp = [2];
 u_max = 15;
 u_min = -15;
 Nx = numel(x_init);
@@ -129,7 +129,8 @@ x_track = zeros(N,Nx);
 U_track = zeros(N,Nu);
 CPU_Time = zeros(N,1);
 T_upda = 50;
-n_h = 80;
+n_h = 60;
+N_H = n_h;
 
 %%
 % figure;hold on;
@@ -145,6 +146,9 @@ for i=1:1:N
         x_H = reshape(FullState(t_H),[numel(t_H),Nx]);    % Dim: [nt, Nx] / by rows
         K_H = reshape(FullGain(t_H),[numel(t_H),Nx]);     % Dim: [nt, Nx] / by rows
         u_H = reshape(FullInput(t_H),[numel(t_H),Nu]);    % Dim: [nt, Nu] / by rows
+        [A_f, B_f] = pendubot.getLinSys(x_H(end,:)', u_H(end,:));
+        [Kf_lqr,Sf_lqr] = lqr(A_f, B_f, Q_ddp, 20*R_ddp);
+        cost.update_Qf(Sf_lqr);
         TSTART = tic;
         [u_rep,K_f,x_rep] = ddp_tracking(x_cur,x_H,u_H,n_h,pendubot,cost,K_H,...
                                          u_max,dt,num_iter,alpha,stop_criterion);
@@ -165,9 +169,10 @@ for i=1:1:N
     end
 %     u_ctrl = u_H(1,:) - K_H(1,:)*(x_cur - x_H(1,:).');
     error = x_cur - X_REF(i,:).';
-    u_ctrl = U_REF(i,:) - 0.5 * reshape(K_REF(i,:),[1 4])*error;
+    u_ctrl = U_REF(i,:) - 0.3 * reshape(K_REF(i,:),[1 4])*error;
     
     U_track(i,:) = u_ctrl;
+%     x_next = pendubot.uncertain_rk45(x_cur,u_ctrl,dt);
     x_next = pendubot.rk45(x_cur,u_ctrl,dt);
     if 3 < t_now && t_now <= 3.0 + dt 
         x_next = x_next + [0.0;0.0;0.0;0.0];
@@ -188,8 +193,8 @@ for kk=1:Nx
     title(strcat('$X_{',num2str(kk),'}$'),'Interpreter','latex','FontSize',20);
     grid on;
 end
-figure(3333);
-plot(t_scale,U_track,'LineWidth',2.0);
+figure(3333);hold on;
+plot(t_scale,U_track,'g','LineWidth',2.0);
 xlabel('Time [s]','Interpreter','latex','FontSize',15);
 title('Control Input','Interpreter','latex','FontSize',20);
 
@@ -204,8 +209,9 @@ title('Phase Plot','Interpreter','latex','FontSize',20);
 
 figure(5555);
 bar(CPU_Time,25);hold on;
+plot(1:1:(size(CPU_Time)),T_upda*dt*ones(size(CPU_Time)),'r','LineWidth',2.0);
 grid on;
-title('CPU TIME (NH=70)','Interpreter','latex','FontSize',20);
+title(strcat('CPU TIME (NH=',num2str(N_H),')'),'Interpreter','latex','FontSize',20);
 xlabel('Iteration [-]','Interpreter','latex','FontSize',15);
 ylabel('Time [s]','Interpreter','latex','FontSize',15);
-ylim([0,T_upda*dt]);
+ylim([0,(T_upda+1)*dt]);
