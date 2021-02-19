@@ -1,5 +1,5 @@
 classdef cmsddp_solver < base_solver
-    %CMSDDPSOLVER Summary of this class goes here
+    %CMSDDPSOLVER constrained multiple shooting ddp solver
     %   Detailed explanation goes here
     
     properties

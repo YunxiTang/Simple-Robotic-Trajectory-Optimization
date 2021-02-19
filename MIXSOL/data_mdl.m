@@ -1,7 +1,5 @@
-classdef data_mdl
-    %DATA_MDL Summary of this class goes here
-    %   Detailed explanation goes here
-    
+classdef data_mdl < handle
+    %DATA_MDL to store the robot data
     properties
         Property1
     end
