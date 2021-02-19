@@ -106,8 +106,8 @@ classdef ddp_solver < handle
                 du(:,i)  = kff;
                 K(:,:,i) = kfb;
                 Vx(:,i)  = Qx + kfb'*Qu + Qux*kff + kfb'*Quu*kff;
-                Vxx(:,:,i) = Qxx + Qux*kfb + kfb'*Qxu + kfb'*Quu*kfb;
-                dV = dV + 1/2*kff'*Quu*kff + kff'*Qu;
+                Vxx(:,:,i) = Qxx + Qux*kfb + k;
+                dV = dV - Qu' * (Quu\Qu);
             end   
         end
         

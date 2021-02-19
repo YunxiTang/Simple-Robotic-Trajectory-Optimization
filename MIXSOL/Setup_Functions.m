@@ -10,6 +10,9 @@ nx = params.nx;
 nu = params.nu;
 u = sym('u',[nu 1]','real');
 x = sym('x',[nx 1]','real');
+lambda = sym('lambda',[nx 1]','real'); % represent Vx_next here
+Vxx = sym('Vxx',[nx nx],'real');
+
 xf = params.xf;
 dt = params.dt;
 Q = cstmdl.Q;
@@ -42,6 +45,13 @@ fx = eye(nx) + fx_ctn .* dt;
 fu = fu_ctn .* dt;
 matlabFunction(fx, fu, 'vars',{x, u},'file','@rbt_mdl/getLinSys', 'optimize',1==1);
 
-
+%%% derive Q_info
+Qx = lx + fx.' * lambda;
+Qu = lu + fu.' * lambda;
+Qxx = lxx + fx.' * Vxx * fx;
+Quu = luu + fu.' * Vxx * fu;
+Qux = lux + fu.' * Vxx * fx;
+Qxu = lxu + fx.' * Vxx * fu;
+matlabFunction(Qx,Qu,Qxx,Quu,Qux,Qxu,'vars',{x,u,lambda,Vxx},'file','@cst_mdl/Q_info', 'optimize',1==1);
 end
 

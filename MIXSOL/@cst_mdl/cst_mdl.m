@@ -33,6 +33,7 @@ classdef cst_mdl < handle
        lf = lf_cost(in1);
        [l,lx,lu,lxx,lux,lxu,luu] = l_info(in1,u1);
        [lf,lfx,lfxx] = lf_info(in1);
+       [Qx,Qu,Qxx,Quu,Qux,Qxu] = Q_info(in1,u1,in3,in4);
     end
 end
 

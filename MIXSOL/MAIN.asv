@@ -1,0 +1,55 @@
+%%% mutiple shooting SLQ for free robot dynamics 
+clear;
+clc;
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Parameters %%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+params.dt    = .02;
+params.T     = 5;
+params.N     = params.T / params.dt;
+params.x0    = [0.0;0.0];
+params.xf    = [3.14;0.0];
+params.nx    = numel(params.x0);
+params.nu    = 1;
+params.Q     = eye(params.nx);
+params.R     = eye(params.nu);
+params.Qf    = eye(params.nx);
+params.Rf    = eye(params.nu);
+params.umax  = 5;
+params.umin  = -5;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%% create robot and cost mdl %%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf,params.umax,params.umin);
+pendulum = rbt_mdl();
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Function Setup %%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+Setup_Functions(params, pendulum, cost);
+
+%%% Initialize
+Vbar = 0;
+ubar = zeros(params.nu, params.N);
+xbar = zeros(params.nx, params.N);
+du   = zeros(params.nu, params.N);
+K    = zeros(params.nu, params.nx, params.N);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%  Initial Simulation %%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+xbar(:,1) = params.x0;
+xi = params.x0;
+% Make initial Guess
+for i = 1:(params.N-1)
+    % Option 1: PD Control
+    ui = -[30 5] * (xi - params.xf);
+
+    % Option 2: Zero
+    % ui = 0;
+    ubar(:,i) = ui;
+    xi = pendulum.rk45(xi,ui,params.dt);
+    xbar(:,i+1) = xi;
+end
+plot(xbar(1,:));hold o

@@ -17,6 +17,8 @@ params.Qf    = eye(params.nx);
 params.Rf    = eye(params.nu);
 params.umax  = 5;
 params.umin  = -5;
+params.Debug = 1;
+params.Max_iter = 100;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% create robot and cost mdl %%%
@@ -29,4 +31,5 @@ pendulum = rbt_mdl();
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Setup_Functions(params, pendulum, cost);
 
-
+solver = ddp_solver();
+% solver.Solve(pendulum, cost, params);

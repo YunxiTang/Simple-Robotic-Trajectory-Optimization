@@ -31,6 +31,14 @@ classdef rbt_mdl
             xd = [qd; 
                   M \ (B*u-C*qd-F*qd-G)];
         end
+        
+        function x_next = rk45(obj, x, u, dt)
+            k1 = obj.Dynamics(0, x,            u);
+            k2 = obj.Dynamics(0, x + 0.5*dt*k1,u);
+            k3 = obj.Dynamics(0, x + 0.5*dt*k2,u);
+            k4 = obj.Dynamics(0, x + dt*k3,    u);
+            x_next = x + dt/6*(k1+2*k2+2*k3+k4);
+        end
     end
     
     methods (Static)
