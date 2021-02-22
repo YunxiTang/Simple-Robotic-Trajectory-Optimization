@@ -1,7 +1,5 @@
 classdef (Abstract) base_solver < handle
-    %BASE_SOLVER Summary of this class goes here
-    %   Detailed explanation goes here
-    
+    %BASE_SOLVER base structure of ddp solver
     properties
         Property1
     end

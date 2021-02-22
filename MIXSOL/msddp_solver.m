@@ -1,5 +1,5 @@
 classdef msddp_solver < base_solver
-    %MSDDPSOLVER Summary of this class goes here
+    %MSDDPSOLVER multiple shooting DDP solver
     %   Detailed explanation goes here
     
     properties
