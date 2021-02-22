@@ -27,13 +27,13 @@ classdef cst_mdl < handle
     end
     
     methods (Static)
-       %%% After code generation to class, add the function declaration
+       %%% After code generation to class, Add the function declaration
        %%% here !!!
        l = l_cost(in1,u1);
        lf = lf_cost(in1);
        [l,lx,lu,lxx,lux,lxu,luu] = l_info(in1,u1);
        [lf,lfx,lfxx] = lf_info(in1);
-       [Qx,Qu,Qxx,Quu,Qux,Qxu] = Q_info(in1,u1,in3,in4);
+       [Qx,Qu,Qxx,Quu,Qux,Qxu] = Q_info(rbt,cst,x,u,Vx,Vxx,params);
     end
 end
 

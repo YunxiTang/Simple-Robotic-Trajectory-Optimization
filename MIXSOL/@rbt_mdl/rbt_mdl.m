@@ -1,4 +1,4 @@
-classdef rbt_mdl
+classdef rbt_mdl < handle
     %RBT_MODEL robot model
     
     properties
@@ -33,16 +33,16 @@ classdef rbt_mdl
         end
         
         function x_next = rk45(obj, x, u, dt)
-            k1 = obj.Dynamics(0, x,            u);
-            k2 = obj.Dynamics(0, x + 0.5*dt*k1,u);
-            k3 = obj.Dynamics(0, x + 0.5*dt*k2,u);
-            k4 = obj.Dynamics(0, x + dt*k3,    u);
+            k1 = obj.Dynamics(0, x,             u);
+            k2 = obj.Dynamics(0, x + 0.5*dt*k1, u);
+            k3 = obj.Dynamics(0, x + 0.5*dt*k2, u);
+            k4 = obj.Dynamics(0, x +     dt*k3, u);
             x_next = x + dt/6*(k1+2*k2+2*k3+k4);
         end
     end
     
     methods (Static)
-        [fx,fu] = getLinSys(in1,u1);
+        [fx, fu, fx_ctn, fu_ctn] = getLinSys(in1,u1);
     end
 end
 
