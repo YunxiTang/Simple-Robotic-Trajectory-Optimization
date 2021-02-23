@@ -26,7 +26,8 @@ lf = 1/2*(x-xf).'*Qf*(x-xf);
 %%% introduce relax-log barrier function later
 
 %%% compute derivatives of cost function
-lx   = jacobian(l,x)';   lu  = jacobian(l,u)';
+%%% Note that jacobian(l,x) is actually a row vector
+lx   = jacobian(l,x)';  lu  = jacobian(l,u)';
 lxx  = jacobian(lx,x);  luu  = jacobian(lu,u);
 lux  = jacobian(lu,x);  lxu  = jacobian(lx,u);
 lfx  = jacobian(lf, x); lfxx = jacobian(lfx,x);

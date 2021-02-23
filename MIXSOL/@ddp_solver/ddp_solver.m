@@ -5,7 +5,7 @@ classdef ddp_solver < handle
         Reg = 0.0,     % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
-        gamma = 0.5,   % threshold to accept a FW step
+        gamma = 0.8,   % threshold to accept a FW step
         beta = 0.8,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = []    % store real costs
@@ -48,7 +48,7 @@ classdef ddp_solver < handle
             % Make initial Guess of Trajectory
             for i = 1:(params.N-1)
                 % Option 1: PD Control
-                ui = -[20 2] * (xi - params.xf);
+                ui = -[10 5] * (xi - params.xf);
                 % Option 2: Zero Control
 %                 ui = 0;
                 % Option 3: Random Control
@@ -130,7 +130,8 @@ classdef ddp_solver < handle
         
         function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,dV,rbt,cst,params)
             % Check the Forward Pass is accepted or not (IMPORTANT!!!)
-            % if not, adjust the line-search factor
+            % if not, adjust the line-search factor  (Armijo backtracking
+            % line search)
             V = 0;
             obj.eps = 1.0;
             alpha = obj.eps;
@@ -153,7 +154,7 @@ classdef ddp_solver < handle
             end
         end
         
-        function [xbar, ubar] = Solve(obj,rbt,cst,params)
+        function [xbar, ubar, K, du] = Solve(obj,rbt,cst,params)
             % init rolling out
             [xbar, ubar] = obj.Init_Forward(rbt,params);
             du = zeros(params.nu, params.N);
@@ -164,7 +165,7 @@ classdef ddp_solver < handle
             %%% start iteration
             while obj.iter <= params.Max_iter
                 if params.Debug == 1
-                    fprintf('[INFO]: Iteration %3d   ||  Cost %.3e \n',obj.iter,Vbar);
+                    fprintf('[INFO]: Iteration %3d   ||  Cost %.7e \n',obj.iter,Vbar);
                 end
                 success = 0;
                 while success == 0

@@ -1,7 +1,8 @@
-%%% single shooting SLQ for free robot dynamics
+%%% Multiple shooting SLQ for free robot dynamics
 %%% Y.X TANG (yxtang@mae.cuhk.edu.hk BMT LAB, CUHK)
-clear;
 clc;
+clear;
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -40,9 +41,5 @@ Setup_Functions(params, pendulum, cost);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Call Solver %%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-solver = ddp_solver(params);
-tic
-[xbar, ubar, K, du]=solver.Solve(pendulum, cost, params);
-toc
-% plot
-solver.solver_Callback(xbar,ubar,params);
+% solver = msddp_solver(params);
+
