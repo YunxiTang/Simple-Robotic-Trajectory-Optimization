@@ -5,7 +5,7 @@ classdef ddp_solver < handle
         Reg = 0.0,     % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
-        gamma = 0.8,   % threshold to accept a FW step
+        gamma = 0.2,   % threshold to accept a FW step
         beta = 0.8,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = []    % store real costs
@@ -30,12 +30,13 @@ classdef ddp_solver < handle
         
         function [] = solver_Callback(obj,xbar,ubar,params)
             %%% for plot
-            figure(111);hold on;
+            figure(111);
             clr = abs(sin(obj.iter))*[1 0.5 0.2];
             plot(xbar(1,:),xbar(2,:),'Color',clr,'LineWidth',2.0);
             grid on;
-            figure(222);hold on;
-            plot(params.tax,ubar,'Color',clr,'LineWidth',2.0);
+%             figure(222);hold on;
+%             plot(params.tax,ubar,'Color',clr,'LineWidth',2.0);
+            
         end
         
         function [xbar, ubar] = Init_Forward(obj,rbt,params)
@@ -48,9 +49,9 @@ classdef ddp_solver < handle
             % Make initial Guess of Trajectory
             for i = 1:(params.N-1)
                 % Option 1: PD Control
-                ui = -[10 5] * (xi - params.xf);
+%                 ui = -[15 5] * (xi - params.xf);
                 % Option 2: Zero Control
-%                 ui = 0;
+                ui = 0;
                 % Option 3: Random Control
                 ubar(:,i) = ui;
                 xi = rbt.rk45(xi,ui,params.dt);
@@ -108,12 +109,12 @@ classdef ddp_solver < handle
                 % regularization
                 Quu_reg = Quu + eye(params.nu)*obj.Reg;
                 % Make sure Quu is PD, if not, exit and increase regularization
-                [~, FLAG] = chol(Quu-eye(params.nu)*1e-9);
+                [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                 if FLAG ~= 0 
                     % Quu is not PD, then break out to increase Reg factor
                     success = 0;
                     if params.Debug == 1
-                        disp(' \t \t [SubSubInfo]: Break BackWardPass And Increase Reg. \n');
+                        fprintf(' \t \t [SubSubInfo]: Break BackWardPass And Increase Reg. \n');
                     end
                     break
                 end
@@ -157,6 +158,7 @@ classdef ddp_solver < handle
         function [xbar, ubar, K, du] = Solve(obj,rbt,cst,params)
             % init rolling out
             [xbar, ubar] = obj.Init_Forward(rbt,params);
+            obj.Update_iter();
             du = zeros(params.nu, params.N);
             K = zeros(params.nu, params.nx, params.N);
             [Vbar,xbar,ubar] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
@@ -165,7 +167,7 @@ classdef ddp_solver < handle
             %%% start iteration
             while obj.iter <= params.Max_iter
                 if params.Debug == 1
-                    fprintf('[INFO]: Iteration %3d   ||  Cost %.7e \n',obj.iter,Vbar);
+                    fprintf('[INFO]: Iteration %3d   ||  Cost %.12e \n',obj.iter,Vbar);
                 end
                 success = 0;
                 while success == 0
