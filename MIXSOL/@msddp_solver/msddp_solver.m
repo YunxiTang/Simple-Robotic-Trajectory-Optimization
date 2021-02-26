@@ -35,15 +35,25 @@ classdef msddp_solver < handle
         
         function [] = solver_Callback(obj,xbar,ubar,params)
             % For plot
+            dft = obj.CalDefect(xbar,params);
             for i = 1:obj.M
                 clr = [i, 0.5 * i, 0.5 * i] / obj.M;
                 figure(111);
                 plot(xbar{i}(1,:),xbar{i}(2,:),'Color',clr,'LineWidth',2.0);hold on;
             end
-            xlabel('$\theta$','Interpreter','latex','FontSize',20);
-            ylabel('$\dot \theta$','Interpreter','latex','FontSize',20);
+            xlabel('$\theta$','Interpreter','latex','FontSize',15);
+            ylabel('$\dot \theta$','Interpreter','latex','FontSize',15);
+            title('Phase Portrait','Interpreter','latex','FontSize',20);
             grid on;
             hold off;
+            figure(555);hold on;
+            subplot(2,1,1);
+            plot(dft(1,:),'s','LineWidth',2.0);hold on;
+            subplot(2,1,2);
+            plot(dft(2,:),'s','LineWidth',2.0);hold on;
+            title('Defects','Interpreter','latex','FontSize',20);
+            grid on;
+            
         end
         
         function [J_idx,xsol,usol] = simulate_phase(obj,rbt,cst,params,idx,x0,xbar,ubar,du,K)
@@ -211,10 +221,10 @@ classdef msddp_solver < handle
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
-                ratio = (V - Vprev)/(alpha*(1-alpha/2)*dV);
+                ratio = (V - Vprev)/(dV);
                 if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
-                          alpha,V-Vprev, obj.gamma*alpha*(1-alpha/2)*dV,ratio);
+                          alpha,V-Vprev, obj.gamma*dV,ratio);
                 end
                 if dV < 0 && V < Vprev + obj.gamma * dV
                     break
@@ -236,7 +246,9 @@ classdef msddp_solver < handle
             [~,xbar,ubar] = obj.Init_Forward(rbt,cst,params);
             obj.Update_iter();
             % plot initial trajectories
-            obj.solver_Callback(xbar,ubar,params);
+            if params.plot == 1
+                obj.solver_Callback(xbar,ubar,params);
+            end
             [dft] = obj.CalDefect(xbar,params);
 
             [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);

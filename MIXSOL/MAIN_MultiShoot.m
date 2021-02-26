@@ -9,7 +9,7 @@ clear;
 params.dt    = .01;
 params.T     = 5.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 10;
+params.shooting_phase = 250;
 params.x0    = [0.0;0.0];
 params.xf    = [3.14;0.0];
 params.nx    = numel(params.x0);
@@ -48,10 +48,12 @@ Setup_Functions(params, pendulum, cost);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 solver = msddp_solver(params);
 % [J,x,u] = solver.Init_Forward(pendulum,cost,params);
+tic
 [xbar,ubar,du,K,dft] = solver.Solve(pendulum,cost,params);
+toc
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0);
-
+J_hist = solver.Jstore;
 
 for k=1:params.shooting_phase
     if mod(k,2)==0
@@ -61,6 +63,11 @@ for k=1:params.shooting_phase
     end
     figure(345);hold on;
     plot(tax{k},ubar{k},'Color',clr,'LineWidth',2.0);
+    xlabel('Time[s]', 'Interpreter','latex','FontSize',15);
+    ylabel('Torque[N]','Interpreter','latex','FontSize',15);
+    grid on;
+    title('Control','Interpreter','latex','FontSize',15);
     figure(456);hold on;
     plot(tax{k},xbar{k},'Color',clr,'LineWidth',2.0);
+    grid on;
 end
