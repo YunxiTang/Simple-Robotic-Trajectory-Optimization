@@ -5,7 +5,7 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-params.dt    = .01;
+params.dt    = .02;
 params.T     = 5;
 params.N     = params.T / params.dt;
 params.x0    = [0.0;0.0];
@@ -14,7 +14,7 @@ params.nx    = numel(params.x0);
 params.nu    = 1;
 params.Q     = eye(params.nx);
 params.R     = eye(params.nu);
-params.Qf    = 10*eye(params.nx);
+params.Qf    = 10 * eye(params.nx);
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 5;
