@@ -1,14 +1,16 @@
+
 classdef ddp_solver < handle
     %DDPSOLVER ddp solver
     
     properties
-        Reg = 0.0,     % how much to regularize
+        Reg = 0.001,     % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.2,   % threshold to accept a FW step
         beta = 0.8,    % for line-search backtracking
         iter = 0,      % count iterations
-        Jstore = []    % store real costs
+        Jstore = [],   % store real costs
+        u_perturb = []
     end
     
     methods
@@ -17,6 +19,8 @@ classdef ddp_solver < handle
             disp('[INFO]: Calling DDP/SLQ solver.');
             if nargin > 0
                 obj.Reg_Type = params.Reg_Type;
+                rng('default');
+                obj.u_perturb = rand(params.nu, params.N-1);
             end
         end
         
@@ -71,7 +75,8 @@ classdef ddp_solver < handle
             for i=1:params.N-1
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
-                ui = ubar(:,i) + alpha*du(:,i) + K(:,:,i)*dxi;
+                % add noise to action-space (faster convergence for simple system)
+                ui = ubar(:,i) + alpha*(du(:,i)+ 0 / obj.iter * obj.u_perturb(:,i)) + K(:,:,i)*dxi;
                 u(:,i) = ui;
                 % Sum up costs
                 J = J + cst.l_cost(xi, ui);
@@ -112,10 +117,10 @@ classdef ddp_solver < handle
                 [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                 if FLAG ~= 0 
                     % Quu is not PD, then break out to increase Reg factor
-                    success = 0;
                     if params.Debug == 1
                         fprintf(' \t \t [SubSubInfo]: Break BackWardPass And Increase Reg. \n');
                     end
+                    success = 0;
                     break
                 end
                 % Standard Recursive Equations
@@ -177,12 +182,13 @@ classdef ddp_solver < handle
                     [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,params);
                     if success == 0
                         % Need increase Reg factor (min incremental is 1e-3)
-                        obj.Reg = max(obj.Reg*2, 1e-3);
+%                         obj.Reg = max(obj.Reg*2, 1e-3);
+                        obj.Reg = obj.Reg * 2;
                     end   
                 end
                 Vprev = Vbar;
                 % Set regularization back to 0 for next backward pass
-                obj.Reg = 0.0; 
+                obj.Reg = 0.001; 
                 
                 %%% Forward Pass
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,params);

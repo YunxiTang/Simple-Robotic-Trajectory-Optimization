@@ -40,6 +40,7 @@ classdef msddp_solver < handle
                 clr = [i, 0.5 * i, 0.5 * i] / obj.M;
                 figure(111);
                 plot(xbar{i}(1,:),xbar{i}(2,:),'Color',clr,'LineWidth',2.0);hold on;
+                scatter(xbar{i}(1,1),xbar{i}(2,1),'MarkerFaceColor',clr); hold on;
             end
             xlabel('$\theta$','Interpreter','latex','FontSize',15);
             ylabel('$\dot \theta$','Interpreter','latex','FontSize',15);
@@ -47,13 +48,12 @@ classdef msddp_solver < handle
             grid on;
             hold off;
             figure(555);hold on;
-            subplot(2,1,1);
-            plot(dft(1,:),'s','LineWidth',2.0);hold on;
-            subplot(2,1,2);
-            plot(dft(2,:),'s','LineWidth',2.0);hold on;
             title('Defects','Interpreter','latex','FontSize',20);
-            grid on;
-            
+            subplot(2,1,1);
+            semilogy(dft(1,:),'s','LineWidth',2.0);hold on;grid on;
+            subplot(2,1,2);
+            semilogy(dft(2,:),'s','LineWidth',2.0);hold on;grid on;
+%             pause;
         end
         
         function [J_idx,xsol,usol] = simulate_phase(obj,rbt,cst,params,idx,x0,xbar,ubar,du,K)
@@ -67,7 +67,7 @@ classdef msddp_solver < handle
             for i=1:(obj.L-1)
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
-                ui = ubar(:,i) + alpha*du(:,i) + K(:,:,i)*dxi;
+                ui = ubar(:,i) + alpha*(du(:,i)+0/(1.5*obj.iter+1)*rand(1)) + K(:,:,i)*dxi;
                 usol(:,i) = ui;
                 % Sum up costs
                 J_idx = J_idx + cst.l_cost(xi, ui);
@@ -183,11 +183,11 @@ classdef msddp_solver < handle
                     while FLAG ~= 0 
                         % Quu is not PD, then increase Reg factor until Quu
                         % is PD
-                        obj.Reg = max(obj.Reg*2, 1e-3);
+                        obj.Reg = obj.Reg + 1e-3;
                         Quu_reg = Quu + eye(params.nu)*obj.Reg;
                         [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                         if params.Debug == 1
-                            fprintf(' \t \t [SubSubInfo]: Regularization <-- Increase Reg. \n');
+                            fprintf(' \t \t [SubSubInfo]: Reg=%5f:  Regularization <-- Increase Reg. \n', obj.Reg);
                         end
                     end
                     
