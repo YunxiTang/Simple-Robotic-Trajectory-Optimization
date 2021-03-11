@@ -18,15 +18,16 @@ R = cstmdl.R;
 Qf = cstmdl.Qf;
 
 %%% write cost function (any form) here
-l = 1/2*(x-xf).'*Q*(x-xf) + 1/2*u.'*R*u;
-l = l * dt;
-
-lf = 1/2*(x-xf).'*Qf*(x-xf);
-
 %%% introduce relax-log barrier function later
 
+l = 1/2*(x-xf).'*Q*(x-xf) + 1/2*u.'*R*u;
+l = l * dt;
+lf = 1/2*(x-xf).'*Qf*(x-xf);
+
+
 %%% compute derivatives of cost function
-lx   = jacobian(l,x)';   lu  = jacobian(l,u)';
+%%% Note that jacobian(l,x) is actually a row vector
+lx   = jacobian(l,x)';  lu  = jacobian(l,u)';
 lxx  = jacobian(lx,x);  luu  = jacobian(lu,u);
 lux  = jacobian(lu,x);  lxu  = jacobian(lx,u);
 lfx  = jacobian(lf, x); lfxx = jacobian(lfx,x);
