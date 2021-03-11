@@ -3,10 +3,10 @@ classdef ddp_solver < handle
     %DDPSOLVER ddp solver
     
     properties
-        Reg = 0.001,     % how much to regularize
+        Reg = 0.000,   % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
-        gamma = 0.2,   % threshold to accept a FW step
+        gamma = 0.1,   % threshold to accept a FW step
         beta = 0.8,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = [],   % store real costs
@@ -34,13 +34,20 @@ classdef ddp_solver < handle
         
         function [] = solver_Callback(obj,xbar,ubar,params)
             %%% for plot
-            figure(111);
-            clr = abs(sin(obj.iter))*[1 0.5 0.2];
-            plot(xbar(1,:),xbar(2,:),'Color',clr,'LineWidth',2.0);
-            grid on;
-%             figure(222);hold on;
-%             plot(params.tax,ubar,'Color',clr,'LineWidth',2.0);
+            fig = figure(111);
+            clf(fig);
+            nx = params.nx;
+            state_clr = ['r','g','b','k'];
+            for i=1:nx
+                plot(params.tax,xbar(i,:),'Color',state_clr(i),'LineWidth',2.0);hold on;
+                grid on;
+            end
+            legend("$x$","$y$","$\theta$","$v$",'Interpreter','latex','FontSize',12);
             
+            figure(222);
+            plot(xbar(1,:),xbar(2,:),'k-','LineWidth',1.0);hold on;
+            plot(xbar(1,1:5:end),xbar(2,1:5:end),'ro','LineWidth',2.0,'MarkerSize',8.0);hold off;
+            grid on;
         end
         
         function [xbar, ubar] = Init_Forward(obj,rbt,params)
@@ -55,10 +62,10 @@ classdef ddp_solver < handle
                 % Option 1: PD Control
 %                 ui = -[15 5] * (xi - params.xf);
                 % Option 2: Zero Control
-                ui = 0;
+                ui = zeros(params.nu,1);
                 % Option 3: Random Control
                 ubar(:,i) = ui;
-                xi = rbt.rk45(xi,ui,params.dt);
+                xi = rbt.rk(xi,ui,params.dt);
                 xbar(:,i+1) = xi;
             end
             obj.solver_Callback(xbar,ubar,params);
@@ -76,19 +83,19 @@ classdef ddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 % add noise to action-space (faster convergence for simple system)
-                ui = ubar(:,i) + alpha*(du(:,i)+ 1 / obj.iter * obj.u_perturb(:,i)) + K(:,:,i)*dxi;
-                if abs(ui) > params.umax
-                    ui = sign(ui)*params.umax;
-                end
+                ui = ubar(:,i) + alpha*(du(:,i)+ 0 / obj.iter * obj.u_perturb(:,i)) + K(:,:,i)*dxi;
+%                 if abs(ui) > params.umax
+%                     ui = sign(ui)*params.umax;
+%                 end
                 u(:,i) = ui;
                 % Sum up costs
                 J = J + cst.l_cost(xi, ui);
                 % Propagate dynamics
-                xi = rbt.rk45(xi, ui, params.dt);
+                xi = rbt.rk(xi, ui, params.dt);
                 x(:,i+1) = xi;
             end
             J = J + cst.lf_cost(x(:,params.N));
-            if params.plot == 1 && mod(obj.iter,5) == 0
+            if params.plot == 1 && mod(obj.iter,1) == 0
                 obj.solver_Callback(xbar,ubar,params);
             end
         end
@@ -185,13 +192,13 @@ classdef ddp_solver < handle
                     [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,params);
                     if success == 0
                         % Need increase Reg factor (min incremental is 1e-3)
-%                         obj.Reg = max(obj.Reg*2, 1e-3);
-                        obj.Reg = obj.Reg * 2;
+                        obj.Reg = max(obj.Reg*2, 1e-3);
+%                         obj.Reg = obj.Reg * 2;
                     end   
                 end
                 Vprev = Vbar;
                 % Set regularization back to 0 for next backward pass
-                obj.Reg = 0.001; 
+                obj.Reg = 0.000; 
                 
                 %%% Forward Pass
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,params);
