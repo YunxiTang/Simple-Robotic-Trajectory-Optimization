@@ -8,4 +8,4 @@ Implement the classical indirect (single shooitng) DDP/SLQ algorithm.
 Extend the classical indirect (single shooitng) DDP/SLQ algorithm to multiple shooting framework. 
 
 ### Constrained Multiple Shooting Differential Dynamic Programming (CMS-DDP)
-#### $\;$(1). Add nonlinear state constraints on MS-DDP
+  #### (1). Add nonlinear state constraints on MS-DDP
