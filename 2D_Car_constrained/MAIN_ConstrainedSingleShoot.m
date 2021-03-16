@@ -2,31 +2,33 @@
 %%% Y.X TANG (yxtang@mae.cuhk.edu.hk BMT LAB, CUHK)
 clc;
 clear;
+close all;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-log = 1;       % data log flag  
-params.dt    = .05;
-params.T     = 5.0;
-params.N     = params.T / params.dt;
-params.x0    = [0.0;0.0;0.0;0.0];
-params.xf    = [3.0;3.0;-pi/2;0.0];
-params.nx    = numel(params.x0);
-params.nu    = 2;
-params.Q     = diag([0.1 0.1 0.1 1.0]);
-params.R     =  diag([0.2 0.1]);
-params.Qf    =  diag([50 50 50 50]);
-params.Rf    = eye(params.nu);
-params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 5.0;
-params.umin  = -5.0;
-params.Debug = 1;     % 1 -> show details
-params.plot = 1;      % 1 -> show plots during optimization
-params.Max_iter = 500;
-params.stop = 1e-9;
-taxis = linspace(0,params.T,params.N);
-params.tax = taxis;
+log               = 0;       % data log flag  
+params.dt         = .02;
+params.T          = 5.0;
+params.N          = params.T / params.dt;
+params.x0         = [0.0;0.0;0.0;0.0];
+params.xf         = [2.5;2.5;0.0;0.0];
+params.nx         = numel(params.x0);
+params.nu         = 2;
+params.Q          = diag([0.1 0.1 0.1 0.1])*10;
+params.R          = diag([0.2 0.2]);
+params.Qf         = diag([5000 5000 5000 5000]);
+params.Rf         = eye(params.nu);
+params.Reg_Type   = 2;  % 1->reg of Quu  / 2->reg of Vxx
+params.umax       = 5.0;
+params.umin       = -5.0;
+params.Debug      = 1;     % 1 -> show details
+params.plot       = 1;      % 1 -> show plots during optimization
+params.Max_iter   = 500;
+params.stop       = 1e-9;
+taxis             = linspace(0,params.T,params.N);
+params.tax        = taxis;
+params.MapNo      = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%% Create Obstacles on the Map %%%
@@ -37,19 +39,47 @@ params.tax = taxis;
 %%%% |-----+------+-----+-----|  %%%
 %%%% | r1  |  r2  | ... |  rm |  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Obstacles = [2.0  0.5  3.0;
-             2.0  1.0  2.4;
-             0.4  0.3  0.15];
+Obstacles = [0.6 1.2 2.2;
+             1.0 1.5 2.1;
+             0.3 0.3 0.2];
 Constraints = constraint(Obstacles);
-% show map
-Map = 1;
-figure(Map);
-plot(params.x0(1), params.x0(2), 'kp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;
-plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15); hold on;
-Constraints.plot_obstacle(Map);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% create robot and cost mdl %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 car = Car();
 cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf,params.umax,params.umin);
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Function Setup %%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+[success] = Setup_Functions(params,car,cost,Constraints);
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%% Call Solver %%%%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+solver = cssddp_solver(Constraints, params);
+tic
+[xbar, ubar, K, du]=solver.Solve(car, cost, params);
+toc
+
+%%%%%%%%%%%%%%%%
+figure(123);
+for kk=1:Constraints.n_ineq
+    plot(solver.Lambda(kk,:),'LineWidth',2.0);hold on;
+end
+grid on;
+title('Dual Variables($\lambda$)','Interpreter','latex','FontSize',20);
+
+
+Primal_residual = zeros(Constraints.n_ineq,params.N);
+for m=1:params.N
+    Primal_residual(:,m) = Constraints.c_ineq(xbar(:,m), ubar(:,m));
+end
+figure(234);
+for kk=1:Constraints.n_ineq
+    plot(Primal_residual(kk,:),'LineWidth',2.0);hold on;
+end
+plot(zeros(params.N),'r-.','LineWidth',2.0);hold on;
+title('Constraint Violation','Interpreter','latex','FontSize',20);
+grid on;
+
