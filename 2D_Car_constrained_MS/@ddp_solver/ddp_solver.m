@@ -1,5 +1,6 @@
-classdef cssddp_solver < handle
-    %DDPSOLVER constrained single shooting ddp solver
+
+classdef ddp_solver < handle
+    %DDPSOLVER ddp solver
     
     properties
         Reg = 0.000,   % how much to regularize
@@ -9,26 +10,18 @@ classdef cssddp_solver < handle
         beta = 0.8,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = [],   % store real costs
-        u_perturb = [],% constrol noise
-        Lambda = [],   % dual variabels.      Dim: [n_ineq, N]
-        Mu = [],       % penalty multipliers. Dim: [n_ineq, N]
-        phi = 20,      % penalty scaling parameter
-        Constraint     % constraints
+        u_perturb = []
     end
     
     methods
-        function obj = cssddp_solver(constraint, params)
-            %CSSDDP_SOLVER 
-            disp('[INFO]: Calling Constrained Single Shooting DDP/SLQ solver.');
+        function obj = ddp_solver(params)
+            %DDP_SOLVER 
+            disp('[INFO]: Calling DDP/SLQ solver.');
             if nargin > 0
                 obj.Reg_Type = params.Reg_Type;
                 rng('default');
-                % Faster than generate perturbed control at each timestep
-                obj.u_perturb = 0.1*rand(params.nu, params.N-1);
+                obj.u_perturb = rand(params.nu, params.N-1);
             end
-            obj.Constraint = constraint;
-            obj.Mu = 10*ones(constraint.n_ineq, params.N);
-            obj.Lambda = zeros(constraint.n_ineq, params.N);
         end
         
         function [] = J_pushback(obj, J)
@@ -39,20 +32,9 @@ classdef cssddp_solver < handle
             obj.iter = obj.iter + 1;
         end
         
-        function [] = dual_update(obj, xbar, ubar, params)
-            % update the dual variables along the trajectory
-            for i = 1:(params.N)
-                xi = xbar(:,i);
-                ui = ubar(:,i);
-                obj.Lambda(:,i) = max(0, obj.Lambda(:,i) + obj.Mu(:,i) .* obj.Constraint.c_ineq(xi, ui));
-                obj.Mu(:,i) = obj.phi .* obj.Mu(:,i);
-            end
-            
-        end
-        
         function [] = solver_Callback(obj,xbar,ubar,params)
             %%% for plot
-            fig = figure(222);
+            fig = figure(111);
             clf(fig);
             nx = params.nx;
             state_clr = ['r','g','b','k'];
@@ -62,13 +44,9 @@ classdef cssddp_solver < handle
             end
             legend("$x$","$y$","$\theta$","$v$",'Interpreter','latex','FontSize',12);
             
-            figure(params.MapNo);
-            plot(params.x0(1), params.x0(2), 'kp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;
-            plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15); hold on;
-            obj.Constraint.plot_obstacle(); hold on;
-
-            plot(xbar(1,:),xbar(2,:),'r-.','LineWidth',2.0);hold off;
-%             plot(xbar(1,1:5:end),xbar(2,1:5:end),'ro','LineWidth',2.0,'MarkerSize',8.0);hold off;
+            figure(222);
+            plot(xbar(1,:),xbar(2,:),'k-','LineWidth',1.0);hold on;
+            plot(xbar(1,1:5:end),xbar(2,1:5:end),'ro','LineWidth',2.0,'MarkerSize',8.0);hold off;
             grid on;
         end
         
@@ -82,11 +60,11 @@ classdef cssddp_solver < handle
             % Make initial Guess of Trajectory
             for i = 1:(params.N-1)
                 % Option 1: PD Control
-                ui = -[.05 .01;.05 .01] * (xi(1:2) - params.xf(1:2));
+%                 ui = -[15 5] * (xi - params.xf);
                 % Option 2: Zero Control
-%                 ui = obj.u_perturb(:,i);
+                ui = zeros(params.nu,1);
                 % Option 3: Random Control
-                ubar(:,i) = ui + obj.u_perturb(:,i);
+                ubar(:,i) = ui;
                 xi = rbt.rk(xi,ui,params.dt);
                 xbar(:,i+1) = xi;
             end
@@ -105,23 +83,18 @@ classdef cssddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 % add noise to action-space (faster convergence for simple system)
-                ui = ubar(:,i) + alpha*(du(:,i)+ 0.0/ obj.iter * obj.u_perturb(:,i)) + K(:,:,i)*dxi;
-                % if abs(ui) > params.umax
-                %      ui = sign(ui)*params.umax;
-                % end
+                ui = ubar(:,i) + alpha*(du(:,i)+ 0.0 / obj.iter * obj.u_perturb(:,i)) + K(:,:,i)*dxi;
+%                 if abs(ui) > params.umax
+%                     ui = sign(ui)*params.umax;
+%                 end
                 u(:,i) = ui;
                 % Sum up costs
-                lambda = obj.Lambda(:,i);
-                Imu = obj.Constraint.active_check(xi, ui, obj.Lambda(:,i), obj.Mu(:,i));
-                J = J + cst.l_cost(xi, ui) + obj.Constraint.AL_Term(xi, ui, lambda, Imu);
+                J = J + cst.l_cost(xi, ui);
                 % Propagate dynamics
                 xi = rbt.rk(xi, ui, params.dt);
                 x(:,i+1) = xi;
             end
-            xN = x(:,params.N);
-            lambdaN = obj.Lambda(:,params.N);
-            ImuN = obj.Constraint.active_check(xN, zeros(params.nu,1), lambdaN, obj.Mu(:,params.N));
-            J = J + cst.lf_cost(xN) + obj.Constraint.AL_Term(xN, zeros(params.nu), lambdaN, ImuN);
+            J = J + cst.lf_cost(x(:,params.N));
             if params.plot == 1 && mod(obj.iter,1) == 0
                 obj.solver_Callback(xbar,ubar,params);
             end
@@ -140,26 +113,16 @@ classdef cssddp_solver < handle
             
             xf = xbar(:,params.N);
             [~,lfx,lfxx] = cst.lf_info(xf);
-            %%%%%%%%%%% add constraints info%%%%%%%%%%%%%%%
-            c_N = obj.Constraint.c_ineq(xf, zeros(params.nu,1));
-            c_Nx = obj.Constraint.algrad(xf, zeros(params.nu,1));
-            lambdaN = obj.Lambda(:,params.N);
-            Imu_N = obj.Constraint.active_check(xf, zeros(params.nu,1), obj.Lambda(:,params.N), obj.Mu(:,params.N));
-            Vx(:,params.N) = lfx + c_Nx' * (lambdaN + Imu_N * c_N);
-            Vxx(:,:,params.N) = lfxx + c_Nx' * Imu_N * c_Nx;
-            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+            Vx(:,params.N) = lfx;
+            Vxx(:,:,params.N) = lfxx;
             for i = (params.N-1):-1:1
                 xi = xbar(:,i);
                 ui = ubar(:,i);
-                Imu_i = obj.Constraint.active_check(xi, zeros(params.nu,1), obj.Lambda(:,i), obj.Mu(:,i));
-                lambda_i = obj.Lambda(:,i);
                 Vxi = Vx(:,i+1);
                 Vxxi = Vxx(:,:,i+1);
-                [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Qcss_info(rbt,cst,obj.Constraint,lambda_i,Imu_i,xi,ui,Vxi,Vxxi,params);
-                
-                % Regularization
+                [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,xi,ui,Vxi,Vxxi,params);
+                % regularization
                 Quu_reg = Quu + eye(params.nu)*obj.Reg;
-                
                 % Make sure Quu is PD, if not, exit and increase regularization
                 [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                 if FLAG ~= 0 
@@ -199,9 +162,7 @@ classdef cssddp_solver < handle
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
                           alpha,V-Vprev, obj.gamma*alpha*(1-alpha/2)*dV,ratio);
                 end
-                if V < Vprev + obj.gamma * alpha*(1-alpha/2)*dV 
-                    break
-                elseif dV >= 0 && V < Vprev + 2 * dV
+                if V < Vprev + obj.gamma * alpha*(1-alpha/2)*dV
                     break
                 end
                 % Else, do backtracking
@@ -216,7 +177,6 @@ classdef cssddp_solver < handle
             du = zeros(params.nu, params.N);
             K = zeros(params.nu, params.nx, params.N);
             [Vbar,xbar,ubar] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
-
             obj.Update_iter();
             obj.J_pushback(Vbar);
             %%% start iteration
@@ -233,31 +193,21 @@ classdef cssddp_solver < handle
                     if success == 0
                         % Need increase Reg factor (min incremental is 1e-3)
                         obj.Reg = max(obj.Reg*2, 1e-3);
+%                         obj.Reg = obj.Reg * 2;
                     end   
                 end
-                obj.dual_update(xbar,ubar,params);
                 Vprev = Vbar;
                 % Set regularization back to 0 for next backward pass
-                obj.Reg = 0.0; 
+                obj.Reg = 0.000; 
                 
                 %%% Forward Pass
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,params);
-                
-                obj.Update_iter();
-%                 obj.dual_update(xbar,ubar,params);
-                change = Vprev - Vbar;
-                if (change) < params.stop
-                    if change > 0
-                        disp('[INFO]: Break With cost converge.');
-                        obj.dual_update(xbar,ubar,params);
-                        break
-                    else
-                        disp('[INFO]: Break As cost Increase.');
-                        obj.dual_update(xbar,ubar,params);
-                        break
-                    end
-                end
                 obj.J_pushback(Vbar);
+                obj.Update_iter();
+                change = Vprev - Vbar;
+                if change < params.stop
+                    break
+                end
             end
         end
     end

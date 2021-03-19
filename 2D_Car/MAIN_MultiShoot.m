@@ -2,24 +2,28 @@
 %%% Y.X TANG (yxtang@mae.cuhk.edu.hk BMT LAB, CUHK)
 clc;
 clear;
-
+close all;
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%    Date  %%%%%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%
+exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 1;
-params.dt    = .05;
+params.dt    = .02;
 params.T     = 5.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 100;
-params.x0    = [-1.0;-1.0;0.0;0.0];
-params.xf    = [1.0;1.0;-pi/2;0.0];
+params.shooting_phase = 5;
+params.x0    = [-2.0;2.0;0.0;0.0];
+params.xf    = [4.0;4.0;0.0;0.0];
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([0.1 0.1 0.1 1.0]);
+params.Q     = diag([.5 0.5 0.1 0.1]);
 % params.R     = 0.1 * eye(params.nu);
 % params.Qf    =  50 * eye(params.nx);
 params.R     =  diag([0.2 0.1]);
-params.Qf    =  diag([50 50 50 50]);
+params.Qf    =  diag([20 20 20 20]);
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 5;
@@ -58,9 +62,12 @@ telapsed = toc(tstart)
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0);
 J_hist = solver.Jstore;
+%%%% data logging %%%
 if log == 1
-    file_name1 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car\data\T',num2str(params.shooting_phase));
-    file_name2 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car\data\M',num2str(params.shooting_phase));
+    file_name1 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car\data\T_', ... 
+                         num2str(params.shooting_phase),'_', exp_date);
+    file_name2 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car\data\M_', ...
+                         num2str(params.shooting_phase), '_', exp_date);
     save(file_name1,'telapsed');
     save(file_name2,'J_hist');
 end
