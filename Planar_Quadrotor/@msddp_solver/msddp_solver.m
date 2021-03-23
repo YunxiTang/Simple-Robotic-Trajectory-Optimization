@@ -35,24 +35,27 @@ classdef msddp_solver < handle
         
         function [] = solver_Callback(obj,xbar,ubar,params)
             % For plot
+            nx = params.nx;
             dft = obj.CalDefect(xbar,params);
             for i = 1:obj.M
                 clr = [i, 0.5 * i, 0.5 * i] / obj.M;
                 figure(111);
                 plot(xbar{i}(1,:),xbar{i}(2,:),'Color',clr,'LineWidth',2.0);hold on;
                 scatter(xbar{i}(1,1),xbar{i}(2,1),'MarkerFaceColor',clr); hold on;
+                axis equal;
             end
+            
             xlabel('$\theta$','Interpreter','latex','FontSize',15);
             ylabel('$\dot \theta$','Interpreter','latex','FontSize',15);
             title('Phase Portrait','Interpreter','latex','FontSize',20);
             grid on;
             hold off;
             figure(555);hold on;
-            title('Defects','Interpreter','latex','FontSize',20);
-            subplot(2,1,1);
-            plot(dft(1,:),'s','LineWidth',2.0);hold on;grid on;
-            subplot(2,1,2);
-            plot(dft(2,:),'s','LineWidth',2.0);hold on;grid on;
+            for k=1:nx
+                title('Defects','Interpreter','latex','FontSize',20);
+                subplot(nx,1,k);
+                plot(dft(k,:),'s','LineWidth',2.0);grid on;
+            end
         end
         
         function [J_idx,xsol,usol] = simulate_phase(obj,rbt,cst,params,idx,x0,xbar,ubar,du,K)
@@ -71,7 +74,7 @@ classdef msddp_solver < handle
                 % Sum up costs
                 J_idx = J_idx + cst.l_cost(xi, ui);
                 % Propagate dynamics
-                xi = rbt.rk45(xi, ui, params.dt);
+                xi = rbt.rk(xi, ui, params.dt);
                 xsol(:,i+1) = xi;
             end
             J_idx = J_idx + cst.lf_cost(xsol(:,end))*(idx==obj.M);
@@ -85,8 +88,9 @@ classdef msddp_solver < handle
             for k = 1:obj.M
                 % make initial guess of intermediate states
                 xbar{k} = zeros(params.nx, obj.L);
-                ubar{k} = zeros(params.nu, obj.L);
-                xbar{k}(:,1) = params.x0 + (k-1) * (params.xf - params.x0) / obj.M;
+%                 ubar{k} = zeros(params.nu, obj.L);
+                ubar{k} = 5*ones(params.nu, obj.L);
+                xbar{k}(:,1) = params.x0 + (k-1) * (params.xf - params.x0) ./ obj.M;
             end
             du = zeros(params.nu, obj.L);
             K  = zeros(params.nu, params.nx, obj.L);
@@ -239,7 +243,7 @@ classdef msddp_solver < handle
             end
         end
         
-        function [xbar,ubar,du,K,dft] = Solve(obj,rbt,cst,params)
+        function [xsol, usol, Ksol] = Solve(obj,rbt,cst,params)
             % solve OCP
             % init rolling out
             [~,xbar,ubar] = obj.Init_Forward(rbt,cst,params);
@@ -281,6 +285,28 @@ classdef msddp_solver < handle
                     break
                 end
             end
+            [xsol, usol, Ksol] = obj.assemble_solution(xbar, ubar, K, params);
+        end
+        function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
+            %%% assemble the final solution
+            if 1 < params.shooting_phase
+                xsol = xbar{1}(:,1:(end-1));
+                usol = ubar{1}(:,1:(end-1));
+                Ksol = zeros(params.nu, params.nx, params.N-1);
+                Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
+                for k=2:params.shooting_phase                
+                    if k < params.shooting_phase
+                        xsol = [xsol xbar{k}(:,1:(end-1))];
+                    end
+                    usol = [usol ubar{k}(:,1:(end-1))];
+                    Ksol(:,:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = K{k}(:,:,1:(end-1));
+                end
+                xsol = [xsol xbar{k}];
+            else
+                xsol = xbar{1};
+                usol = ubar{1}(:,1:(end-1));
+                Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
+            end  
         end
     end
 end

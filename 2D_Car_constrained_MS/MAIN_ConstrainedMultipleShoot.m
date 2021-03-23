@@ -1,4 +1,4 @@
-%%% Constrained Single Shooting SLQ for Free Robot Dynamics
+%%% Constrained Multiple Shooting SLQ for Free Robot Dynamics
 %%% Y.X TANG (yxtang@mae.cuhk.edu.hk BMT LAB, CUHK)
 clc;
 clear;

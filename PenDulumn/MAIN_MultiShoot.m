@@ -6,7 +6,7 @@ clear;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-log = 1;
+log = 0;
 params.dt    = .01;
 params.T     = 5.0;
 params.N     = params.T / params.dt;
