@@ -31,6 +31,7 @@ classdef constraint < handle
         
         function h = c_ineq(obj, x, u)
             % ineqaulity constraint (make sure it is less/equal (h<=0) than 0)
+            % pick out the constrained subspace
             H = [1 0 0 0;
                  0 1 0 0];
             

@@ -8,18 +8,18 @@ close all;
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log               = 0;       % data log flag  
-params.dt         = .02;
+params.dt         = .025;
 params.T          = 5.0;
 params.N          = params.T / params.dt;
 params.x0         = [0.0;0.0;0.0;0.0];
-params.xf         = [3.5;3.5;0.0;0.0];
+params.xf         = [2.5;3.5;0.0;0.0];
 params.nx         = numel(params.x0);
 params.nu         = 2;
-params.Q          = diag([0.1 0.1 0.1 0.1]);
+params.Q          = diag([0.1 0.1 0.1 0.1])*2;
 params.R          = diag([0.2 0.2]);
-params.Qf         = diag([500 500 500 500])*10;
+params.Qf         = diag([500 500 500 500]);
 params.Rf         = eye(params.nu);
-params.Reg_Type   = 2;  % 1->reg of Quu  / 2->reg of Vxx
+params.Reg_Type   = 2.0;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax       = 5.0;
 params.umin       = -5.0;
 params.Debug      = 1;     % 1 -> show details
@@ -40,8 +40,8 @@ params.MapNo      = 1;
 %%%% | r1  |  r2  | ... |  rm |  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Obstacles = [0.8 1.8 2.7;
-             1.2 2.0 2.0;
-             0.2 0.5 0.3];
+             1.2 2.0 2.5;
+             0.5 0.5 0.5];
 Constraints = constraint(Obstacles);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

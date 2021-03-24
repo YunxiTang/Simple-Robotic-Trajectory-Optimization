@@ -6,16 +6,18 @@ classdef constraint < handle
     properties
         n_ineq = 0.0,       % Number of inequality constraint
         x_obstacle = [],    % [nx+1, n_ineq], store obstacles
-        active_set = []     % check the active constraints
+        active_set = [],     % check the active constraints
+        dt
     end
     
     methods
-        function obj = constraint(obstacles)
+        function obj = constraint(obstacles, dt)
             %CONSTRAINT Construct an instance of constraint
             disp("[INFO]: Creating Constraint Model.");
             [~, num_ineq] = size(obstacles);
             obj.n_ineq = num_ineq;
             obj.x_obstacle = obstacles;
+            obj.dt = dt; 
         end
         
         function Imu = active_check(obj, x, u, lambda, mu)
@@ -31,8 +33,10 @@ classdef constraint < handle
         
         function h = c_ineq(obj, x, u)
             % ineqaulity constraint (make sure it is less/equal (h<=0) than 0)
+            % pick out the constrained subspace
             H = [1 0 0 0;
                  0 1 0 0];
+            
             for k=1:obj.n_ineq
                 r = obj.x_obstacle(3,k);
                 x_obs = obj.x_obstacle(1:2,k);
@@ -42,7 +46,8 @@ classdef constraint < handle
         end
         
         function [AL_J] = AL_Term(obj, x, u, lambda, Imu)
-            AL_J = (lambda + 1/2 * Imu * obj.c_ineq(x,u))' * obj.c_ineq(x,u);
+            AL_j = (lambda + 1/2 * Imu * obj.c_ineq(x,u))' * obj.c_ineq(x,u);
+            AL_J = AL_j * obj.dt;
         end
       
         
@@ -76,4 +81,5 @@ classdef constraint < handle
        [cx,cu] = algrad(x,u);
     end
 end
+
 

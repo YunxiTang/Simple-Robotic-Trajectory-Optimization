@@ -287,6 +287,7 @@ classdef msddp_solver < handle
             end
             [xsol, usol, Ksol] = obj.assemble_solution(xbar, ubar, K, params);
         end
+        
         function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
             %%% assemble the final solution
             if 1 < params.shooting_phase

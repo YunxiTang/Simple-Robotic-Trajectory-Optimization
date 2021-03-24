@@ -9,19 +9,19 @@ params.dt    = .02;
 params.T     =  10;
 params.N     = params.T / params.dt;
 params.x0    = [1.0; 1.0; 0.8; 0.0; 0.0; 0.0];
-params.xf    = [2.5; 1.0; 0.0; 0.0; 0.0; 0.0];
+params.xf    = [9.5; 1.0; 0.0; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1])*2;
-params.R     =  diag([0.1 0.1]);
-params.Qf    =  diag([50 50 50 50 50 50]);
+params.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1])*5;
+params.R     = diag([0.1 0.1]);
+params.Qf    = diag([50 50 50 50 50 50]);
 params.Rf    = eye(params.nu);
 params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 10.0;
 params.umin  = -10.0;
 params.Debug = 1;     % 1 -> show details
 params.plot = 1;      % 1 -> show plots during optimization
-params.Max_iter = 5000;
+params.Max_iter = 500;
 params.stop = 1e-9;
 taxis = linspace(0,params.T,params.N);
 params.tax = taxis;
@@ -60,9 +60,9 @@ legend("$u_L$","$u_R$",'Interpreter','latex','FontSize',12);
 grid on;
 
 %%%%%%%%% animation %%%%%%%%%
-figure(789);
-k = 5;
-plot(xbar(1,:),xbar(2,:),'k-.','LineWidth',1.0); hold on;
-planar_quad.animation(taxis,xbar,k,789);
-plot(xbar(1,:),xbar(2,:),'k-.','LineWidth',1.0); hold on;
-plot(xbar(1,1:k:end),xbar(2,1:k:end),'ro','LineWidth',2.0); hold on;
+% figure(789);
+% k = 5;
+% plot(xbar(1,:),xbar(2,:),'k-.','LineWidth',1.0); hold on;
+% planar_quad.animation(taxis,xbar,k,789);
+% plot(xbar(1,:),xbar(2,:),'k-.','LineWidth',1.0); hold on;
+% plot(xbar(1,1:k:end),xbar(2,1:k:end),'ro','LineWidth',2.0); hold on;
