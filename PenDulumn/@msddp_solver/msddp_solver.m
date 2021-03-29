@@ -124,13 +124,13 @@ classdef msddp_solver < handle
                     xbar{i}(:,1) = xbar{i}(:,1);
                     x0 = xbar{i}(:,1);
                 else
-                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
-%                     [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-%                     [fx_n, fu_n] = rbt.getLinSys(xbar{i}(:,1),ubar{i}(:,1));
-%                     fx = (fx_pre * 2) / 2;
-%                     fu = (fu_pre * 2) / 2;
-%                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps*du{i-1}(:,end);
-%                     x0 = xbar{i}(:,1) + 1.0*(tilda + dft(:,i-1));
+%                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
+                    [fx_n, fu_n] = rbt.getLinSys(xbar{i}(:,1),ubar{i}(:,1));
+                    fx = (fx_pre * 2) / 2;
+                    fu = (fu_pre * 2) / 2;
+                    tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps*du{i-1}(:,end);
+                    x0 = xbar{i}(:,1) + 1.0*(tilda + dft(:,i-1));
 %                     x0 = xbar{i}(:,1) + 1.0*((x{i-1}(:,end) - xbar{i-1}(:,end)) + dft(:,i-1));
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});

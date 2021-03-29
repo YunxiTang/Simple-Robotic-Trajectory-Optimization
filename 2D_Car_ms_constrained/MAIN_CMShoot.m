@@ -16,13 +16,13 @@ params.dt               =  .01;
 params.T                =  5.0;
 params.N                = params.T / params.dt;
 params.shooting_phase   = 50;
-params.x0               = [0.5;0.0;0.0;0.0];
-params.xf               = [2.0;3.5;pi/2;0.0];
+params.x0               = [0.0;0.0;0.0;0.0];
+params.xf               = [2.5;1.5;0.0;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 2;
-params.Q                = diag([0.1 0.1 0.1 0.1]);
+params.Q                = diag([0.1 0.1 0.0 0.1]);
 params.R                = diag([0.1 0.1]);
-params.Qf               = diag([500 500 500 500]);
+params.Qf               = diag([50 50 50 50]);
 params.Rf               = eye(params.nu);
 params.Reg_Type         = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax             = 5;
@@ -49,12 +49,12 @@ params.MapNo = 1;
 %%%% |-----+------+-----+-----|  %%%
 %%%% | r1  |  r2  | ... |  rm |  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Obstacles = [1.2 0.5 2.1;
-             1.5 2.3 2.8;
-             0.4 0.4 0.5];
-% Obstacles = [0.11;
-%              2.1  ;
-%              0.3 ];
+% Obstacles = [0.2  1.0 1.0 0.5 2.0;
+%              0.2  3.0 1.5 2.3 2.8;
+%              0.15 0.3 0.3 0.3 0.25];
+Obstacles = [1.5 0.5;
+             0.6 1.0;
+             0.45 0.45];
 Constraints = constraint(Obstacles, params.dt);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -81,17 +81,7 @@ telapsed = toc(tstart)
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0);
 J_hist = solver.Jstore;
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-%%%%%%%% data logging %%%%%%%
-%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-if log == 1
-    file_name1 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car_ms_constrained\data\T_', ... 
-                         num2str(params.shooting_phase));
-    file_name2 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car_ms_constrained\data\M_', ...
-                         num2str(params.shooting_phase));
-    save(file_name1,'telapsed');
-    save(file_name2,'J_hist');
-end
+
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%  plot data   %%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -103,9 +93,13 @@ grid on;
 title('Dual Variables($\lambda$)','Interpreter','latex','FontSize',20);
 
 Primal_residual = zeros(Constraints.n_ineq,params.N);
+Vio_Norm = zeros(params.N,1);
 for m=1:params.N
-    Primal_residual(:,m) = Constraints.c_ineq(xsol(:,m), usol(:,m));
+    h = Constraints.c_ineq(xsol(:,m), usol(:,m));
+    Primal_residual(:,m) = h;
+    Vio_Norm(m) = norm(max(h,0));
 end
+Max_vio = max(Vio_Norm);
 figure(234);
 for kk=1:Constraints.n_ineq
     plot(Primal_residual(kk,:),'LineWidth',2.0);hold on;
@@ -124,3 +118,18 @@ figure();
 plot(t(1:end-1), usol,'LineWidth',2.0);
 legend("$u_{\theta}$","$u_v$",'Interpreter','latex','FontSize',12);
 grid on;
+
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+%%%%%%%% data logging %%%%%%%
+%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
+if log == 1
+    file_name1 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car_ms_constrained\data\T_', ... 
+                         num2str(params.shooting_phase));
+    file_name2 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car_ms_constrained\data\M_', ...
+                         num2str(params.shooting_phase));
+    file_name3 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car_ms_constrained\data\V_', ...
+                         num2str(params.shooting_phase));
+    save(file_name1,'telapsed');
+    save(file_name2,'J_hist');
+    save(file_name3,'Max_vio');
+end

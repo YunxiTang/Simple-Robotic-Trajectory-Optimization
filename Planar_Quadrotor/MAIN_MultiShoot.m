@@ -12,16 +12,16 @@ exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
 params.dt    = .02;
-params.T     = 5.0;
+params.T     = 4.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 10;
-params.x0    = [0.0; 1.0; -0.8; 0.0; 0.0; 0.0];
-params.xf    = [10.0; 15.0; 0.0; 0.0; 0.0; 0.0];
+params.shooting_phase = 20;
+params.x0    = [1.0; 0.2; 1.0; 0.0; 0.0; 0.0];
+params.xf    = [0.0; 0.0; 0.0; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1])*2;
+params.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1]);
 params.R     = diag([0.1 0.1]);
-params.Qf    = diag([50 50 50 50 50 50]);
+params.Qf    = diag([50 50 50 50 50 50])/5;
 params.Rf    = eye(params.nu);
 params.Reg_Type = 1.0;                    % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 5;
@@ -81,9 +81,9 @@ if log == 1
 end
 
 %%%%%%%%% animation %%%%%%%%%
-figure(789);
-k = 2;
-plot(xsol(1,:),xsol(2,:),'k-.','LineWidth',1.0); hold on;
-planar_quad.animation(t,xsol,k,789);
-plot(xsol(1,:),xsol(2,:),'k-.','LineWidth',1.0); hold on;
-plot(xsol(1,1:k:end),xsol(2,1:k:end),'ro','LineWidth',2.0); hold on;
+% figure(789);
+% k = 2;
+% plot(xsol(1,:),xsol(2,:),'k-.','LineWidth',1.0); hold on;
+% planar_quad.animation(t,xsol,k,789);
+% plot(xsol(1,:),xsol(2,:),'k-.','LineWidth',1.0); hold on;
+% plot(xsol(1,1:k:end),xsol(2,1:k:end),'ro','LineWidth',2.0); hold on;

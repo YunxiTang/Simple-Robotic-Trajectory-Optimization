@@ -1,7 +1,9 @@
-function [Qx,Qu,Qxx,Quu,Qux,Qxu] = Qcms_info(rbt,cst,constraint,lambda,Imu,x,u,Vx,Vxx,params)
+function [Qx,Qu,Qxx,Quu,Qux,Qxu] = Qcms_info(rbt,cst,constraint,lambda,Imu,x,u,Vx,Vxx,params,iter)
 %Qms_INFO : For constrained multiple shooting DDP/SLQ
+
+reg = 0.1 / iter;
 nx = params.nx;
-Vxx = Vxx + 0.1 * eye(nx) * (params.Reg_Type == 2);
+Vxx = Vxx + reg * eye(nx) * (params.Reg_Type == 2);
 
 [fx,fu] = rbt.getLinSys(x,u);
 [~,lx,lu,lxx,lux,lxu,luu] = cst.l_info(x,u);

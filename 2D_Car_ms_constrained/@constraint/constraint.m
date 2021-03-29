@@ -25,7 +25,7 @@ classdef constraint < handle
             Imu = zeros(obj.n_ineq, obj.n_ineq);
             h = obj.c_ineq(x, u);
             for i=1:obj.n_ineq
-                if h(i) > 0.0 || lambda(i) > 0.0
+                if h(i) > -1e-5 || lambda(i) > 0.0
                     Imu(i,i) = mu(i);
                 end
             end

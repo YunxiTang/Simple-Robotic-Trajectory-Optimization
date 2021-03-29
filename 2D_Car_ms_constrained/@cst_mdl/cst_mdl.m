@@ -34,7 +34,7 @@ classdef cst_mdl < handle
        [l,lx,lu,lxx,lux,lxu,luu] = l_info(in1,in2);
        [lf,lfx,lfxx] = lf_info(in1);
        [Qx,Qu,Qxx,Quu,Qux,Qxu] = Q_info(rbt,cst,x,u,Vx,Vxx,params);
-       [Qx,Qu,Qxx,Quu,Qux,Qxu] = Qcms_info(rbt,cst,constraint,lambda,Imu,x,u,Vx,Vxx,params);
+       [Qx,Qu,Qxx,Quu,Qux,Qxu] = Qcms_info(rbt,cst,constraint,lambda,Imu,x,u,Vx,Vxx,params,iter);
     end
 end
 
