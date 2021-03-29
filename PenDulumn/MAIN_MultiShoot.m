@@ -6,7 +6,7 @@ clear;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-log = 1;
+log = 0;
 params.dt    = .01;
 params.T     = 5.0;
 params.N     = params.T / params.dt;
@@ -19,7 +19,7 @@ params.Q     = eye(params.nx);
 params.R     = eye(params.nu);
 params.Qf    = 10*eye(params.nx);
 params.Rf    = eye(params.nu);
-params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
+params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 5;
 params.umin  = -5;
 params.Debug = 1;     % 1 -> show details

@@ -42,7 +42,9 @@ classdef msddp_solver < handle
                 figure(111);
                 plot(xbar{i}(1,:),xbar{i}(2,:),'Color',clr,'LineWidth',2.0);hold on;
                 scatter(xbar{i}(1,1),xbar{i}(2,1),'MarkerFaceColor',clr); hold on;
+                axis equal;
             end
+            
             xlabel('$\theta$','Interpreter','latex','FontSize',15);
             ylabel('$\dot \theta$','Interpreter','latex','FontSize',15);
             title('Phase Portrait','Interpreter','latex','FontSize',20);

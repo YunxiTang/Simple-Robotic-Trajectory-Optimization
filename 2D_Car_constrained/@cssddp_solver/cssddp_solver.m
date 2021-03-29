@@ -24,7 +24,7 @@ classdef cssddp_solver < handle
                 obj.Reg_Type = params.Reg_Type;
                 rng('default');
                 % Faster than generate perturbed control at each timestep
-                obj.u_perturb = 0.05*rand(params.nu, params.N-1);
+                obj.u_perturb = 0.0*rand(params.nu, params.N-1);
             end
             obj.Constraint = constraint;
             obj.Mu = 10*ones(constraint.n_ineq, params.N);
@@ -82,9 +82,9 @@ classdef cssddp_solver < handle
             % Make initial Guess of Trajectory
             for i = 1:(params.N-1)
                 % Option 1: PD Control
-                ui = -[.2 .01;.2 .01] * (xi(1:2) - params.xf(1:2));
+%                 ui = -[.05 .01;.05 .01] * (xi(1:2) - params.xf(1:2));
                 % Option 2: Zero Control
-%                 ui = obj.u_perturb(:,i);
+                ui = zeros(params.nu, 1);
                 % Option 3: Random Control
                 ubar(:,i) = ui + obj.u_perturb(:,i);
                 xi = rbt.rk(xi,ui,params.dt);
@@ -112,7 +112,7 @@ classdef cssddp_solver < handle
                 u(:,i) = ui;
                 % Sum up costs
                 lambda = obj.Lambda(:,i);
-                Imu = obj.Constraint.active_check(xi, ui, obj.Lambda(:,i), obj.Mu(:,i));
+                Imu = obj.Constraint.active_check(xi, ui, lambda, obj.Mu(:,i));
                 J = J + cst.l_cost(xi, ui) + obj.Constraint.AL_Term(xi, ui, lambda, Imu);
                 % Propagate dynamics
                 xi = rbt.rk(xi, ui, params.dt);
@@ -140,14 +140,14 @@ classdef cssddp_solver < handle
             
             xf = xbar(:,params.N);
             [~,lfx,lfxx] = cst.lf_info(xf);
-            % add constraints info
+            %%%%%%%%%%% add constraints info%%%%%%%%%%%%%%%
             c_N = obj.Constraint.c_ineq(xf, zeros(params.nu,1));
             c_Nx = obj.Constraint.algrad(xf, zeros(params.nu,1));
             lambdaN = obj.Lambda(:,params.N);
             Imu_N = obj.Constraint.active_check(xf, zeros(params.nu,1), obj.Lambda(:,params.N), obj.Mu(:,params.N));
             Vx(:,params.N) = lfx + c_Nx' * (lambdaN + Imu_N * c_N);
             Vxx(:,:,params.N) = lfxx + c_Nx' * Imu_N * c_Nx;
-            
+            %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
             for i = (params.N-1):-1:1
                 xi = xbar(:,i);
                 ui = ubar(:,i);
@@ -249,9 +249,11 @@ classdef cssddp_solver < handle
                 if (change) < params.stop
                     if change > 0
                         disp('[INFO]: Break With cost converge.');
+                        obj.dual_update(xbar,ubar,params);
                         break
                     else
                         disp('[INFO]: Break As cost Increase.');
+                        obj.dual_update(xbar,ubar,params);
                         break
                     end
                 end

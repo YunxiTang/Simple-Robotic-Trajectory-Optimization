@@ -50,10 +50,9 @@ classdef msddp_solver < handle
             figure(555);hold on;
             title('Defects','Interpreter','latex','FontSize',20);
             subplot(2,1,1);
-            semilogy(dft(1,:),'s','LineWidth',2.0);hold on;grid on;
+            plot(dft(1,:),'s','LineWidth',2.0);hold on;grid on;
             subplot(2,1,2);
-            semilogy(dft(2,:),'s','LineWidth',2.0);hold on;grid on;
-%             pause;
+            plot(dft(2,:),'s','LineWidth',2.0);hold on;grid on;
         end
         
         function [J_idx,xsol,usol] = simulate_phase(obj,rbt,cst,params,idx,x0,xbar,ubar,du,K)
@@ -125,13 +124,13 @@ classdef msddp_solver < handle
                     xbar{i}(:,1) = xbar{i}(:,1);
                     x0 = xbar{i}(:,1);
                 else
-                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
-%                     [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-%                     [fx_n, fu_n] = rbt.getLinSys(xbar{i}(:,1),ubar{i}(:,1));
-%                     fx = (fx_pre * 2) / 2;
-%                     fu = (fu_pre * 2) / 2;
-%                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps*du{i-1}(:,end);
-%                     x0 = xbar{i}(:,1) + 1.0*(tilda + dft(:,i-1));
+%                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
+                    [fx_n, fu_n] = rbt.getLinSys(xbar{i}(:,1),ubar{i}(:,1));
+                    fx = (fx_pre * 2) / 2;
+                    fu = (fu_pre * 2) / 2;
+                    tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps*du{i-1}(:,end);
+                    x0 = xbar{i}(:,1) + 1.0*(tilda + dft(:,i-1));
 %                     x0 = xbar{i}(:,1) + 1.0*((x{i-1}(:,end) - xbar{i-1}(:,end)) + dft(:,i-1));
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
@@ -282,6 +281,27 @@ classdef msddp_solver < handle
                     break
                 end
             end
+        end
+        function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
+            %%% assemble the final solution
+            if 1 < params.shooting_phase
+                xsol = xbar{1}(:,1:(end-1));
+                usol = ubar{1}(:,1:(end-1));
+                Ksol = zeros(params.nu, params.nx, params.N-1);
+                Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
+                for k=2:params.shooting_phase                
+                    if k < params.shooting_phase
+                        xsol = [xsol xbar{k}(:,1:(end-1))];
+                    end
+                    usol = [usol ubar{k}(:,1:(end-1))];
+                    Ksol(:,:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = K{k}(:,:,1:(end-1));
+                end
+                xsol = [xsol xbar{k}];
+            else
+                xsol = xbar{1};
+                usol = ubar{1}(:,1:(end-1));
+                Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
+            end  
         end
     end
 end

@@ -37,12 +37,12 @@ classdef ddp_solver < handle
             fig = figure(111);
             clf(fig);
             nx = params.nx;
-            state_clr = ['r','g','b','k'];
+            state_clr = ['r','g','b','k','m','c'];
             for i=1:nx
                 plot(params.tax,xbar(i,:),'Color',state_clr(i),'LineWidth',2.0);hold on;
                 grid on;
             end
-            legend("$x$","$y$","$\theta$","$v$",'Interpreter','latex','FontSize',12);
+            legend("$x$","$y$","$\theta$","$\dot{x}$",'$\dot{y}$','$\dot{\theta}$','Interpreter','latex','FontSize',12);
             
             figure(222);
             plot(xbar(1,:),xbar(2,:),'k-','LineWidth',1.0);hold on;
@@ -52,7 +52,7 @@ classdef ddp_solver < handle
         
         function [xbar, ubar] = Init_Forward(obj,rbt,params)
             %METHOD1 Init rollout
-            ubar = zeros(params.nu, params.N);
+            ubar = 5*ones(params.nu, params.N);
             xbar = zeros(params.nx, params.N);
 
             xbar(:,1) = params.x0;

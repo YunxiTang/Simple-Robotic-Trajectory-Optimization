@@ -31,8 +31,10 @@ classdef constraint < handle
         
         function h = c_ineq(obj, x, u)
             % ineqaulity constraint (make sure it is less/equal (h<=0) than 0)
+            % pick out the constrained subspace
             H = [1 0 0 0;
                  0 1 0 0];
+            
             for k=1:obj.n_ineq
                 r = obj.x_obstacle(3,k);
                 x_obs = obj.x_obstacle(1:2,k);

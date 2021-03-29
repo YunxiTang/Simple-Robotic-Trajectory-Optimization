@@ -29,7 +29,7 @@ plot(1:5:L50,S50(1:5:L50),'m-x','LineWidth',1.0,'MarkerSize',8.0); hold on;
 plot(1:5:L100,S100(1:5:L100),'m-d','LineWidth',1.0,'MarkerSize',8.0); hold on;
 
 plot(S1(end)*ones(length(S1)),'k--','LineWidth',2.0);
-ylim([1.5 3.5]);
+% ylim([1.5 3.5]);
 grid on;
 title('Cost v.s. Iterations','Interpreter','latex','FontSize',15);
 xlabel('Iter','Interpreter','latex','FontSize',15);

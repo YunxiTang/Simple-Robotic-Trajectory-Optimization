@@ -5,7 +5,7 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-params.dt    = .01;
+params.dt    = .05;
 params.T     = 5;
 params.N     = params.T / params.dt;
 params.x0    = [-2.0;2.0;0.0;0.0];
@@ -21,8 +21,8 @@ params.Rf    = eye(params.nu);
 params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 5.0;
 params.umin  = -5.0;
-params.Debug = 1;     % 1 -> show details
-params.plot = 1;      % 1 -> show plots during optimization
+params.Debug = 0;     % 1 -> show details
+params.plot = 0;      % 1 -> show plots during optimization
 params.Max_iter = 5000;
 params.stop = 1e-9;
 taxis = linspace(0,params.T,params.N);
