@@ -20,7 +20,7 @@ params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 10.0;
 params.umin  = -10.0;
 params.Debug = 1;     % 1 -> show details
-params.plot = 1;      % 1 -> show plots during optimization
+params.plot = 0;      % 1 -> show plots during optimization
 params.Max_iter = 500;
 params.stop = 1e-9;
 taxis = linspace(0,params.T,params.N);
@@ -35,7 +35,7 @@ cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf,params.umax,params.umin);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Function Setup %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Setup_Functions(params, fallcat, cost);
+% Setup_Functions(params, fallcat, cost);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Call Solver %%%%%%%%%%%%

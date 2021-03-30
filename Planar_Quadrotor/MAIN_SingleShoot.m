@@ -5,47 +5,47 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-params.dt    = .02;
-params.T     =  10;
-params.N     = params.T / params.dt;
-params.x0    = [1.0; 1.0; 0.8; 0.0; 0.0; 0.0];
-params.xf    = [9.5; 1.0; 0.0; 0.0; 0.0; 0.0];
-params.nx    = numel(params.x0);
-params.nu    = 2;
-params.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1])*5;
-params.R     = diag([0.1 0.1]);
-params.Qf    = diag([50 50 50 50 50 50]);
-params.Rf    = eye(params.nu);
-params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 10.0;
-params.umin  = -10.0;
-params.Debug = 1;     % 1 -> show details
-params.plot = 1;      % 1 -> show plots during optimization
-params.Max_iter = 500;
-params.stop = 1e-9;
-taxis = linspace(0,params.T,params.N);
-params.tax = taxis;
+parser.dt    = .02;
+parser.T     =  10;
+parser.N     = parser.T / parser.dt;
+parser.x0    = [1.0; 1.0; 0.8; 0.0; 0.0; 0.0];
+parser.xf    = [8.5; 1.0; 0.0; 0.0; 0.0; 0.0];
+parser.nx    = numel(parser.x0);
+parser.nu    = 2;
+parser.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1])*5;
+parser.R     = diag([0.1 0.1]);
+parser.Qf    = diag([50 50 50 50 50 50]);
+parser.Rf    = eye(parser.nu);
+parser.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
+parser.umax  = 10.0;
+parser.umin  = -10.0;
+parser.Debug = 1;     % 1 -> show details
+parser.plot = 1;      % 1 -> show plots during optimization
+parser.Max_iter = 500;
+parser.stop = 1e-9;
+taxis = linspace(0,parser.T,parser.N);
+parser.tax = taxis;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% create robot and cost mdl %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 planar_quad = planar_quadrotor();
-cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf,params.umax,params.umin);
+cost = cst_mdl(parser.Q,parser.R,parser.Qf,parser.Rf,parser.umax,parser.umin);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Function Setup %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Setup_Functions(params, planar_quad, cost);
+Setup_Functions(parser, planar_quad, cost);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Call Solver %%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-solver = ddp_solver(params);
+solver = ddp_solver(parser);
 tic
-[xbar, ubar, K, du]=solver.Solve(planar_quad, cost, params);
+[xbar, ubar, K, du]=solver.Solve(planar_quad, cost, parser);
 toc
 % plot
-solver.solver_Callback(xbar,ubar,params);
+solver.solver_Callback(xbar,ubar,parser);
 hold off;
 
 figure(333);
