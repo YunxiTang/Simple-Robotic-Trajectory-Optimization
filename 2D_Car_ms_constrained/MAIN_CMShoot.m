@@ -15,9 +15,9 @@ log = 0;
 params.dt               =  .01;
 params.T                =  8.0;
 params.N                = params.T / params.dt;
-params.shooting_phase   = 80;
-params.x0               = [0.0;0.0;0.0;0.0];
-params.xf               = [2.5;3.5;-0.3;0.0];
+params.shooting_phase   = 4;
+params.x0               = [0.5;1.0;0.0;0.0];
+params.xf               = [2.0;3.5;-0.3;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 2;
 params.Q                = diag([0.1 0.1 0.0 0.1]);
@@ -49,9 +49,9 @@ params.MapNo = 1;
 %%%% |-----+------+-----+-----|  %%%
 %%%% | r1  |  r2  | ... |  rm |  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Obstacles = [0.0  1.0 1.0 0.5 2.0  1.9;
+Obstacles = [0.0  1.0 1.0 0.5 1.8  1.9;
              1.0  3.0 1.5 2.3 2.8  2.0;
-             0.3 0.3 0.3 0.3 0.25 0.2];
+             0.3  0.3 0.3 0.3 0.25 0.2];
 % Obstacles = [1.5 0.5;
 %              0.6 1.0;
 %              0.3 0.3];
