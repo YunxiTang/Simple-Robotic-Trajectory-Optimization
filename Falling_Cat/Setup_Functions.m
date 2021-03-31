@@ -6,7 +6,6 @@ function [success] = Setup_Functions(params,rbtmdl,cstmdl)
 %%% cstmdl           class            cost model
 %%% success          int              1/0 (0->ERROR)
 success = 0;
-echo on
 nx = params.nx;
 nu = params.nu;
 u = sym('u',[nu 1]','real');
@@ -39,11 +38,12 @@ matlabFunction(l,lx,lu,lxx,lux,lxu,luu, 'vars',{x, u},...
 matlabFunction(lf,lfx,lfxx,'vars',{x},'file','@cst_mdl/lf_info','optimize',1==1);
 
 %%% derive  dynamics and compute anylytical derivatives
-f = rbtmdl.rk(x, u, dt);
-fx = jacobian(f,x);
-fu = jacobian(f,u);
-matlabFunction(fx, fu,'vars',{x, u},'file','@falling_cat/getLinSys', 'optimize',1==1);
+f = rbtmdl.Dynamics(0.0, x, u);
+fx_continuous = jacobian(f,x);
+fu_continuous = jacobian(f,u);
+fx = eye(nx) + fx_continuous .* dt;
+fu = fu_continuous .* dt;
+matlabFunction(fx, fu,'vars',{x, u},'file','@falling_cat/getLinSys', 'optimize',1==0);
 success = 1;
-echo off
 end
 

@@ -193,7 +193,6 @@ classdef ddp_solver < handle
                     if success == 0
                         % Need increase Reg factor (min incremental is 1e-3)
                         obj.Reg = max(obj.Reg*2, 1e-3);
-%                         obj.Reg = obj.Reg * 2;
                     end   
                 end
                 Vprev = Vbar;

@@ -127,14 +127,15 @@ classdef msddp_solver < handle
                     xbar{i}(:,1) = xbar{i}(:,1);
                     x0 = xbar{i}(:,1);
                 else
-                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
-%                     [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-%                     [fx_n, fu_n] = rbt.getLinSys(xbar{i}(:,1),ubar{i}(:,1));
-%                     fx = (fx_pre * 2) / 2;
-%                     fu = (fu_pre * 2) / 2;
-%                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps*du{i-1}(:,end);
-%                     x0 = xbar{i}(:,1) + 1.0*(tilda + dft(:,i-1));
-%                     x0 = xbar{i}(:,1) + 1.0*((x{i-1}(:,end) - xbar{i-1}(:,end)) + dft(:,i-1));
+                    %%% Method 1: From Crocoddyl
+                    % x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+                    
+                    %%% Method 2: From Control Toolbox of ETHz
+                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
+                    fx = (fx_pre * 2) / 2;
+                    fu = (fu_pre * 2) / 2;
+                    tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
+                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -203,7 +204,6 @@ classdef msddp_solver < handle
                     alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-%                     dV = dV + 1/2*kff'*Quu*kff + kff'*Qu;
                     dV = alpha * delta1 + 1/2*alpha^2*delta2;
                 end
             end
