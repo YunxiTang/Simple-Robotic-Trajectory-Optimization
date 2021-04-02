@@ -6,7 +6,7 @@ classdef falling_cat < handle
         g = 9.81,
         k = 6000,
         m1 = 2.5,
-        m2 = 0.15,
+        m2 = 0.35,
         l1 = 0.15,
         l2 = 0.3,
         l2E = 0.3,
@@ -60,11 +60,8 @@ classdef falling_cat < handle
             C4 = cos(theta_4);
             C6 = cos(theta_6);
             %% equation of motion from recursive Newton Euler method
-%             M = [];
-%             C = [];
             G = zeros(5,1);
-            R = zeros(5);
-            % 
+            R = zeros(5); 
             M(1,1) = S2*(I_zz*S2 + M_2*S4*(d_7 + l_2)^2*(S2*S4 - C2*C3*C4) + M_2*C4*S6*(d_7 + l_2)^2*(C4*S2*S6 - C2*C6*S3 + C2*C3*S4*S6)) + C2*(S3*(I_yy*C2*S3 - M_2*C6*(d_7 + l_2)^2*(C4*S2*S6 - C2*C6*S3 + C2*C3*S4*S6)) + C3*(I_xx*C2*C3 - M_2*C4*(d_7 + l_2)^2*(S2*S4 - C2*C3*C4) + M_2*S4*S6*(d_7 + l_2)^2*(C4*S2*S6 - C2*C6*S3 + C2*C3*S4*S6)));
             M(1,2) = C2*(C3*(I_xx*S3 + M_2*C4^2*S3*(d_7 + l_2)^2 + M_2*S4*S6*(d_7 + l_2)^2*(C3*C6 + S3*S4*S6)) - S3*(I_yy*C3 + M_2*C6*(d_7 + l_2)^2*(C3*C6 + S3*S4*S6))) + M_2*C4*C6*S2*(d_7 + l_2)^2*(C3*S6 - C6*S3*S4);
             M(1,3) = S2*(I_zz + M_2*S4^2*(d_7 + l_2)^2 + M_2*C4^2*S6^2*(d_7 + l_2)^2) - M_2*C2*C4*C6*(d_7 + l_2)^2*(S3*S6 + C3*C6*S4);
@@ -129,27 +126,28 @@ classdef falling_cat < handle
            k4 = obj.Dynamics(0, q +     dt*k3, u);
            q_next = q + dt/6*(k1+2*k2+2*k3+k4);
         end
-        
-        function [] = animation(obj, T, X, k, Num_Fig)
-%             N = numel(T);
-%             fig = figure(Num_Fig);
-%             
-%             for i=1:2*k:N
-% %                 clf(fig);
-%                 xi = X(1,i);
-%                 yi = X(2,i);
-%                 thetai = X(3,i);
-%                 obj.draw_rotor(xi,yi,thetai);
-%                 xlim([0,10]);
-%                 axis equal;
-%                 grid on;
-%                 pause(0.05);
-%             end
+        function [fx,fu] = getLinSys(obj,qbar,ubar,dt)
+            dh = 1e-3;
+            Nx = numel(qbar);
+            Nu = numel(ubar);
+            Jx = zeros(Nx,Nx);
+            Ju = zeros(Nx,Nu);
+            Hx = eye(Nx) * dh;
+            Hu = eye(Nu) * dh;
+            for i=1:Nx
+                Jx(:,i) = (obj.rk(qbar + Hx(:,i), ubar, dt) - obj.rk(qbar - Hx(:,i), ubar, dt)) / (2*dh);
+            end
+
+            for i=1:Nu
+                Ju(:,i) = (obj.rk(qbar, ubar+ Hu(:,i), dt) - obj.rk(qbar , ubar - Hu(:,i), dt)) / (2*dh);
+            end
+            fx = Jx;
+            fu = Ju;
         end
         
     end
     methods (Static)
-        [fx,fu] = getLinSys(in1,in2);
+        [fx, fu] = Finite_Diff(func, qbar, ubar, dt, interval)
     end
 end
 

@@ -6,22 +6,22 @@ clc;
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 params.dt    = .02;
-params.T     =  2;
+params.T     =  10;
 params.N     = params.T / params.dt;
-params.x0    = [pi/6;pi/5;pi/5;pi/5;pi/6; 0.0;0.0;0.0;0.0;0.0];
+params.x0    = [0.5;0.5;0.5;0.5;0.5; 0.0;0.0;0.0;0.0;0.0];
 params.xf    = zeros(10,1);
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = eye(params.nx)*0.1;
+params.Q     = diag([1;1;1;0.1;0.1;1;1;1;0.1;0.1])*10;
 params.R     = eye(params.nu)*0.1;
-params.Qf    = eye(params.nx)*50.0;
+params.Qf    = diag([1;1;1;0.1;0.1;1;1;1;0.1;0.1])*500;
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 10.0;
 params.umin  = -10.0;
 params.Debug = 1;     % 1 -> show details
-params.plot = 0;      % 1 -> show plots during optimization
-params.Max_iter = 500;
+params.plot = 1;      % 1 -> show plots during optimization
+params.Max_iter = 1000;
 params.stop = 1e-9;
 taxis = linspace(0,params.T,params.N);
 params.tax = taxis;
@@ -35,7 +35,7 @@ cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf,params.umax,params.umin);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Function Setup %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-% Setup_Functions(params, fallcat, cost);
+Setup_Functions(params, fallcat, cost);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Call Solver %%%%%%%%%%%%
@@ -60,3 +60,5 @@ legend("$u_L$","$u_R$",'Interpreter','latex','FontSize',12);
 grid on;
 
 %%%%%%%%% animation %%%%%%%%%
+figure();
+plot(taxis,rad2deg(xbar(1:3,:)),'LineWidth',2.0);

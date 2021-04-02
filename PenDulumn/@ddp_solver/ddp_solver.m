@@ -1,9 +1,8 @@
-
 classdef ddp_solver < handle
     %DDPSOLVER ddp solver
     
     properties
-        Reg = 0.001,     % how much to regularize
+        Reg = 0.001,   % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.2,   % threshold to accept a FW step
@@ -38,8 +37,6 @@ classdef ddp_solver < handle
             clr = abs(sin(obj.iter))*[1 0.5 0.2];
             plot(xbar(1,:),xbar(2,:),'Color',clr,'LineWidth',2.0);
             grid on;
-%             figure(222);hold on;
-%             plot(params.tax,ubar,'Color',clr,'LineWidth',2.0);
             
         end
         
@@ -185,8 +182,7 @@ classdef ddp_solver < handle
                     [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,params);
                     if success == 0
                         % Need increase Reg factor (min incremental is 1e-3)
-%                         obj.Reg = max(obj.Reg*2, 1e-3);
-                        obj.Reg = obj.Reg * 2;
+                        obj.Reg = max(obj.Reg*2, 1e-3);
                     end   
                 end
                 Vprev = Vbar;

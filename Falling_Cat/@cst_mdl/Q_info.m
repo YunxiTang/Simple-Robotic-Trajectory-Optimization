@@ -1,10 +1,12 @@
-function [Qx,Qu,Qxx,Quu,Qux,Qxu] = Q_info(rbt,cst,x,u,Vx,Vxx,params)
+function [Qx,Qu,Qxx,Quu,Qux,Qxu] = Q_info(rbt,cst,x,u,Vx,Vxx,params,iter)
 %Q_INFO
-if nargin > 6
-    nx = params.nx;
-    Vxx = Vxx + 0.1 * eye(nx) * (params.Reg_Type == 2);
+V_reg = 0.00;
+if isfield(params,'shooting_phase') 
+   V_reg = 0.00 + 0.9 / exp(iter);
 end
-[fx,fu] = rbt.getLinSys(x,u);
+nx = params.nx;
+Vxx = Vxx + V_reg * eye(nx) * (params.Reg_Type == 2);
+[fx,fu] = rbt.getLinSys(x,u, params.dt);
 [~,lx,lu,lxx,lux,lxu,luu] = cst.l_info(x,u);
 Qx = lx + fx.' * Vx;
 Qu = lu + fu.' * Vx;
