@@ -45,8 +45,7 @@ classdef ddp_solver < handle
 %             legend("$x$","$y$","$\theta$","$\dot{x}$",'$\dot{y}$','$\dot{\theta}$','Interpreter','latex','FontSize',12);
             
             figure(222);
-            plot(xbar(1,:),xbar(2,:),'k-','LineWidth',1.0);hold on;
-            plot(xbar(1,1:5:end),xbar(2,1:5:end),'ro','LineWidth',2.0,'MarkerSize',8.0);hold off;
+            plot3(xbar(1,:),xbar(2,:),xbar(3,:),'k-','LineWidth',1.0);hold off;
             grid on;
         end
         
@@ -84,8 +83,10 @@ classdef ddp_solver < handle
                 % Update with stepsize and feedback
                 % add noise to action-space (faster convergence for simple system)
                 ui = ubar(:,i) + alpha*(du(:,i)+ 0.0 / obj.iter * obj.u_perturb(:,i)) + K(:,:,i)*dxi;
-%                 if abs(ui) > params.umax
-%                     ui = sign(ui)*params.umax;
+%                 for k=1:params.nu
+%                     if abs(ui(k)) > params.umax
+%                         ui(k) = sign(ui(k))*params.umax;
+%                     end
 %                 end
                 u(:,i) = ui;
                 % Sum up costs
@@ -120,7 +121,7 @@ classdef ddp_solver < handle
                 ui = ubar(:,i);
                 Vxi = Vx(:,i+1);
                 Vxxi = Vxx(:,:,i+1);
-                [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,xi,ui,Vxi,Vxxi,params);
+                [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,xi,ui,Vxi,Vxxi,params, obj.iter);
                 % regularization
                 Quu_reg = Quu + eye(params.nu)*obj.Reg;
                 % Make sure Quu is PD, if not, exit and increase regularization
