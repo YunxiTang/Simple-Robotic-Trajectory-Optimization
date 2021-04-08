@@ -19,7 +19,6 @@ Qf = cstmdl.Qf;
 
 %%% write cost function (any form) here
 %%% introduce relax-log barrier function later
-
 l = 1/2*(x-xf).'*Q*(x-xf) + 1/2*u.'*R*u;
 l = l * dt;
 lf = 1/2*(x-xf).'*Qf*(x-xf);

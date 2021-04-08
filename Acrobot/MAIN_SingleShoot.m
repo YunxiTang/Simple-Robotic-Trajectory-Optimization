@@ -5,23 +5,23 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-params.dt    = .02;
-params.T     = 8;
+params.dt    = .05;
+params.T     = 10;
 params.N     = params.T / params.dt;
 params.x0    = [0.0; 0.0; 0.0; 0.0];
-params.xf    = [-3.14; 0.0; 0.0; 0.0];
+params.xf    = [3.14; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
 params.nu    = 1;
 params.Q     = diag([0.1 0.1 0.1 0.1])*10;
 params.R     =  0.1;
-params.Qf    =  diag([50 50 50 50]);
+params.Qf    =  diag([0.1 0.1 0.1 0.1])*1200;
 params.Rf    = eye(params.nu);
-params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 5.0;
-params.umin  = -5.0;
+params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
+params.umax  = 20.0;
+params.umin  = -20.0;
 params.Debug = 1;     % 1 -> show details
 params.plot = 1;      % 1 -> show plots during optimization
-params.Max_iter = 2000;
+params.Max_iter = 500;
 params.stop = 1e-9;
 taxis = linspace(0,params.T,params.N);
 params.tax = taxis;
@@ -52,4 +52,8 @@ grid on;
 
 figure(3333);
 plot(taxis,ubar(1,:),'r','LineWidth',2.0);
+grid on;
+
+figure(444);
+plot(taxis,squeeze(K),'LineWidth',2.0);
 grid on;

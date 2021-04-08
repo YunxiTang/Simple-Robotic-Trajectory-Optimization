@@ -12,23 +12,23 @@ exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
 params.dt    = .02;
-params.T     = 8.0;
+params.T     = 10.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 2;
+params.shooting_phase = 1;
 params.x0    = [0.0; 0.0; 0.0; 0.0];
 params.xf    = [3.14; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
 params.nu    = 1;
-params.Q     = diag([0.1 0.5 0.1 0.1])*10;
-params.R     = 0.5;
-params.Qf    = diag([50 50 50 50])*2;
+params.Q     = diag([0.1 0.1 0.1 0.1])*10;
+params.R     = 0.1;
+params.Qf    = diag([0.1 0.1 0.1 0.1])*1200;
 params.Rf    = eye(params.nu);
-params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 5;
-params.umin  = -5;
-params.Debug = 1;     % 1 -> show details
-params.plot = 0;      % 1 -> show plots during optimization
-params.Max_iter = 2000;
+params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
+params.umax  = 18;
+params.umin  = -18;
+params.Debug = ~log;     % 1 -> show details
+params.plot = ~log;      % 1 -> show plots during optimization
+params.Max_iter = 500;
 params.stop = 1e-9;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
@@ -60,16 +60,24 @@ telapsed = toc(tstart)
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0);
 J_hist = solver.Jstore;
+R_hist = solver.Contract_Rate;
 %%%% data logging %%%
 if log == 1
-    file_name1 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car\data\T_', ... 
+    file_name1 = strcat('.\data\T_', ... 
                          num2str(params.shooting_phase),'_', exp_date);
-    file_name2 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car\data\M_', ...
+    file_name2 = strcat('.\data\M_', ...
+                         num2str(params.shooting_phase), '_', exp_date);
+    file_name3 = strcat('.\data\R_', ...
                          num2str(params.shooting_phase), '_', exp_date);
     save(file_name1,'telapsed');
     save(file_name2,'J_hist');
+    save(file_name3,'R_hist');
 end
 t = 0.0:params.dt:params.T;
 figure(789);
 plot(t,xsol,'LineWidth',2.0);
 legend("$x_1$","$x_2$","$x_3$","$x_4$",'Interpreter','latex','FontSize',12);
+
+figure(790);
+plot(t(1:end-1),squeeze(Ksol(1,:,:)),'LineWidth',2.0);
+legend("$K_1$","$K_2$","$K_3$","$K_4$",'Interpreter','latex','FontSize',12);

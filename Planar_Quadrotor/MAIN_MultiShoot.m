@@ -6,28 +6,28 @@ close all;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%    Date  %%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-exp_date = date;
+exp_date = '23-Mar-2021';
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
 params.dt    = .02;
-params.T     = 4.0;
+params.T     = 5.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 20;
-params.x0    = [1.0; 0.2; 1.0; 0.0; 0.0; 0.0];
+params.shooting_phase = 50;
+params.x0    = [1.0; 2.2; 1.0; 0.0; 0.0; 0.0];
 params.xf    = [0.0; 0.0; 0.0; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1]);
+params.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1])*5;
 params.R     = diag([0.1 0.1]);
-params.Qf    = diag([50 50 50 50 50 50])/5;
+params.Qf    = diag([50 50 50 50 50 50]);
 params.Rf    = eye(params.nu);
 params.Reg_Type = 1.0;                    % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 5;
+params.umax  = 10;
 params.umin  = -5;
-params.Debug = 1;     % 1 -> show details
-params.plot = 1;      % 1 -> show plots during optimization
+params.Debug = ~log;     % 1 -> show details
+params.plot = ~log;      % 1 -> show plots during optimization
 params.Max_iter = 500;
 params.stop = 1e-9;
 nt = params.T / params.shooting_phase;

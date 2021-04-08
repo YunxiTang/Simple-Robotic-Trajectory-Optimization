@@ -84,9 +84,9 @@ classdef ddp_solver < handle
                 % Update with stepsize and feedback
                 % add noise to action-space (faster convergence for simple system)
                 ui = ubar(:,i) + alpha*(du(:,i)+ 0.0 / obj.iter * obj.u_perturb(:,i)) + K(:,:,i)*dxi;
-%                 if abs(ui) > params.umax
-%                     ui = sign(ui)*params.umax;
-%                 end
+                if abs(ui) > params.umax
+                    ui = sign(ui)*params.umax;
+                end
                 u(:,i) = ui;
                 % Sum up costs
                 J = J + cst.l_cost(xi, ui);

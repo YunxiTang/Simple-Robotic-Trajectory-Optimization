@@ -4,13 +4,14 @@ classdef msddp_solver < handle
     properties
         M,             % shooting phase
         L,             % length of shooting phase
-        Reg = 0.0,     % how much to regularize
+        Reg = 1e-3,    % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
-        gamma = 0.1,   % threshold to accept a FW step
+        gamma = 0.2,   % threshold to accept a FW step
         beta = 0.8,    % for line-search backtracking
         iter = 0,      % count iterations
-        Jstore = []    % store real costs
+        Jstore = [],   % store real costs
+        Contract_Rate = []
     end
     
     methods
@@ -20,12 +21,17 @@ classdef msddp_solver < handle
             obj.M = params.shooting_phase;
             obj.Reg_Type = params.Reg_Type;
             obj.L = params.N / obj.M + 1; 
-            rng('default');
         end
         
         function [] = J_pushback(obj, J)
             % store costs
             obj.Jstore = [obj.Jstore J];
+            
+        end
+        
+        function [] = Rate_pushback(obj, rate)
+            % store costs
+            obj.Contract_Rate = [obj.Contract_Rate rate];
             
         end
         
@@ -41,12 +47,9 @@ classdef msddp_solver < handle
             for i = 1:obj.M
                 clr = [i, 0.5 * i, 0.5 * i] / obj.M;
                 figure(111);
-                plot(xbar{i}(1,:),xbar{i}(2,:),'Color',clr,'LineWidth',2.0);hold on;
-                scatter(xbar{i}(1,1),xbar{i}(2,1),'MarkerFaceColor',clr); hold on;
-                xlim([-3.2,3.2]);
-                ylim([-5,5]);
-                axis equal;
+                plot(xbar{i}(1,:),xbar{i}(2,:),'Color',clr,'LineWidth',2.0);hold on; 
             end
+            axis equal;
             
             xlabel('$\theta$','Interpreter','latex','FontSize',15);
             ylabel('$\dot \theta$','Interpreter','latex','FontSize',15);
@@ -55,11 +58,11 @@ classdef msddp_solver < handle
             hold off;
             figure(555);
             for k=1:nx
-                title('Defects','Interpreter','latex','FontSize',20);
                 subplot(nx,1,k);
-                plot(dft(k,:),'s','LineWidth',2.0);grid on;
-                hold off;
+                plot(dft(k,:),'s','LineWidth',2.0);
+                grid on;
             end
+            title('Defects','Interpreter','latex','FontSize',20);
         end
         
         function [J_idx,xsol,usol] = simulate_phase(obj,rbt,cst,params,idx,x0,xbar,ubar,du,K)
@@ -74,11 +77,23 @@ classdef msddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
+                for k=1:params.nu
+                    if abs(ui(k)) > params.umax
+                        ui(k) = sign(ui(k))*params.umax;
+                    end
+                end
                 usol(:,i) = ui;
+                
                 % Sum up costs
                 J_idx = J_idx + cst.l_cost(xi, ui);
                 % Propagate dynamics
                 xi = rbt.rk(xi, ui, params.dt);
+                if isnan(xi)
+                    xsol = xbar;
+                    usol = ubar;
+                    J_idx = 1e10;
+                    break
+                end
                 xsol(:,i+1) = xi;
             end
             J_idx = J_idx + cst.lf_cost(xsol(:,end))*(idx==obj.M);
@@ -91,10 +106,9 @@ classdef msddp_solver < handle
             J = 0;
             for k = 1:obj.M
                 % make initial guess of intermediate states
-                xbar{k} = zeros(params.nx, obj.L);
-%                 ubar{k} = ones(params.nu, obj.L);
-                ubar{k} = 0.0*randn(params.nu, obj.L);
-                xbar{k}(:,1) = params.x0 + (k-1) * ([0;pi;0;0]) ./ obj.M;
+                xbar{k} = kron(zeros(1, obj.L), params.xf);
+                ubar{k} = zeros(params.nu, obj.L);
+                xbar{k}(:,1) = params.x0 + (k-1) * (params.xf - params.x0) ./ obj.M;
             end
             du = zeros(params.nu, obj.L);
             K  = zeros(params.nu, params.nx, obj.L);
@@ -133,14 +147,12 @@ classdef msddp_solver < handle
                     x0 = xbar{i}(:,1);
                 else
                     %%% Method 1: From Crocoddyl
-                    % x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
                     
                     %%% Method 2: From Control Toolbox of ETHz
-                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-                    fx = (fx_pre * 2) / 2;
-                    fu = (fu_pre * 2) / 2;
+                    [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end), params.dt);
                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
+%                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -183,19 +195,19 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params,obj.iter);
                     % regularization
                     Quu_reg = Quu + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
                     [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
-                    if FLAG ~= 0 
+                    if FLAG > 0 
                         % Quu is not PD, then increase Reg factor until Quu
                         % is PD
                         success = 0;
                         if params.Debug == 1
                             fprintf(' \t \t [SubSubInfo]: Reg=%5f:  Regularization <-- Increase Reg. \n', obj.Reg);
                         end
-                        break 
+                        break
                     end
                     
                     % Standard Recursive Equations
@@ -211,10 +223,12 @@ classdef msddp_solver < handle
                     dV = alpha * delta1 + 1/2*alpha^2*delta2;
                 end
                 if success == 0
-                        break
+                    break
                 end
             end
-            
+            if params.Debug == 1
+                fprintf('\t \t [SubInfo]: Reg=%5f\n',obj.Reg);
+            end
         end
         
         function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,dV,rbt,cst,params)
@@ -233,16 +247,21 @@ classdef msddp_solver < handle
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
                           alpha,V-Vprev, obj.gamma*dV,ratio);
                 end
+                if obj.iter == 0
+                    break
+                end
                 if dV < 0 && V < Vprev + obj.gamma * dV
                     break
-                elseif dV >= 0 && V < Vprev + 2 * dV
+                end
+                if dV >= 0 && V < Vprev + 2 * dV
                     break
                 end
                 % Else, do backtracking
                 obj.eps = obj.beta * obj.eps;
             end
             obj.J_pushback(V);
-            if params.plot == 1 && mod(obj.iter,5) == 0
+            obj.Rate_pushback(ratio);
+            if params.plot == 1 && mod(obj.iter,2) == 0
                obj.solver_Callback(x,u,params);
             end
         end
@@ -250,59 +269,36 @@ classdef msddp_solver < handle
         function [xsol, usol, Ksol] = Solve(obj,rbt,cst,params)
             % solve OCP
             % init rolling out
-            [~,xbar,ubar] = obj.Init_Forward(rbt,cst,params);
-            obj.Update_iter();
+            [Vbar,xbar,ubar] = obj.Init_Forward(rbt,cst,params);
+            
             % plot initial trajectories
             if params.plot == 1
                 obj.solver_Callback(xbar,ubar,params);
             end
             [dft] = obj.CalDefect(xbar,params);
-
-            [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);
-            
-            %%% run a forward iteration
-            [Vbar,xbar,ubar] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
-            obj.Update_iter();
-            [dft] = obj.CalDefect(xbar,params);
-            
-            %%% start iteration
-            while obj.iter < params.Max_iter
+            while obj.iter <= params.Max_iter
+                success = 0;
+                % run backward pass
+                while success == 0 
+                    [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);
+                    obj.Reg = max(obj.Reg * 2, 1e-3);
+                end
+                Vprev = Vbar;
                 if params.Debug == 1
                     fprintf('[INFO]: Iteration %3d   ||  Cost %.12e \n',obj.iter,Vbar);
                 end
-                success = 0;
-                while success == 0
-                    % run backward pass
-                    if params.Debug == 1
-                        fprintf('\t \t [SubInfo]: Reg=%5f\n',obj.Reg);
-                    end
-                    [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);
-                    if success == 0
-                        % Need increase Reg factor (min incremental is 1e-3)
-                        obj.Reg = max(obj.Reg*2, 1e-3);
-                    end
-                end
-                Vprev = Vbar;
-                
-                % Set regularization back to 0.001 for next backward pass
-                obj.Reg = 0.0;
+                % Set regularization back to 0 for next backward pass
+                obj.Reg = 1e-3;
                 %%% Forward Pass
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,params);
                 obj.Update_iter();
                 [dft] = obj.CalDefect(xbar,params);
                 change = Vprev - Vbar;
-                temp = cell2mat(du);
-                [tm,tn] = size(temp);
-                DU = reshape(temp,[tm*tn,1]);
-                ext  = max(abs(DU));
-                if change < params.stop || ext < 1e-3
-                    
+                if abs(change) < params.stop 
                     break
                 end
             end
-            disp(ext)
             [xsol, usol, Ksol] = obj.assemble_solution(xbar, ubar, K, params);
-            
         end
         
         function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
