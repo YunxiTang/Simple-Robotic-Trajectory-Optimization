@@ -127,7 +127,7 @@ classdef falling_cat < handle
            q_next = q + dt/6*(k1+2*k2+2*k3+k4);
         end
         function [fx,fu] = getLinSys(obj,qbar,ubar,dt)
-            dh = 1e-3;
+            dh = 1e-4;
             Nx = numel(qbar);
             Nu = numel(ubar);
             Jx = zeros(Nx,Nx);

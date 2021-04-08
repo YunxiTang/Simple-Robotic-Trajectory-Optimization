@@ -17,11 +17,11 @@ parser.R     = diag([0.1 0.1]);
 parser.Qf    = diag([50 50 50 50 50 50]);
 parser.Rf    = eye(parser.nu);
 parser.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
-parser.umax  = 10.0;
+parser.umax  = 20.0;
 parser.umin  = -10.0;
 parser.Debug = 1;     % 1 -> show details
 parser.plot = 1;      % 1 -> show plots during optimization
-parser.Max_iter = 500;
+parser.Max_iter = 10;
 parser.stop = 1e-9;
 taxis = linspace(0,parser.T,parser.N);
 parser.tax = taxis;
@@ -60,6 +60,7 @@ legend("$u_L$","$u_R$",'Interpreter','latex','FontSize',12);
 grid on;
 
 %%%%%%%%% animation %%%%%%%%%
+%%
 % figure(789);
 % k = 5;
 % plot(xbar(1,:),xbar(2,:),'k-.','LineWidth',1.0); hold on;

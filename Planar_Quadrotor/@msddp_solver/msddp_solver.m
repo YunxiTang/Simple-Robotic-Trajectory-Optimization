@@ -70,6 +70,9 @@ classdef msddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)+0/(1.5*obj.iter+1)*rand(1)) + K(:,:,i)*dxi;
+                if abs(ui) > params.umax
+                    ui = sign(ui)*params.umax;
+                end
                 usol(:,i) = ui;
                 % Sum up costs
                 J_idx = J_idx + cst.l_cost(xi, ui);
@@ -221,7 +224,7 @@ classdef msddp_solver < handle
             V = 0;
             obj.eps = 1.0;
             alpha = obj.eps;
-            while alpha > 1e-5
+            while alpha > 1e-9
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);

@@ -76,9 +76,28 @@ classdef Acrobot < handle
             k4 = obj.Dynamics(0, x +     dt*k3, u);
             x_next = x + dt/6*(k1+2*k2+2*k3+k4);
         end
+        
+        function [fx,fu] = getLinSys(obj,qbar,ubar,dt)
+            dh = 1e-3;
+            Nx = numel(qbar);
+            Nu = numel(ubar);
+            Jx = zeros(Nx,Nx);
+            Ju = zeros(Nx,Nu);
+            Hx = eye(Nx) * dh;
+            Hu = eye(Nu) * dh;
+            for i=1:Nx
+                Jx(:,i) = (obj.rk(qbar + Hx(:,i), ubar, dt) - obj.rk(qbar - Hx(:,i), ubar, dt)) / (2*dh);
+            end
+
+            for i=1:Nu
+                Ju(:,i) = (obj.rk(qbar, ubar+ Hu(:,i), dt) - obj.rk(qbar , ubar - Hu(:,i), dt)) / (2*dh);
+            end
+            fx = Jx;
+            fu = Ju;
+        end
     end
-    methods (Static)
-        [fx,fu] = getLinSys(in1,in2);
-    end
+%     methods (Static)
+%         [fx,fu] = getLinSys(in1,in2);
+%     end
 end
 

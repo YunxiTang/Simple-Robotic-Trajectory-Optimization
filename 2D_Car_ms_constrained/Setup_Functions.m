@@ -1,4 +1,4 @@
-function [success] = Setup_Functions(params,rbtmdl,cstmdl,constraints)
+ function [success] = Setup_Functions(params,rbtmdl,cstmdl,constraints)
 %SETUP_FUNCTIONS setup some important functions for solvers
 %%% ARGS
 %%% params           struct           set of params
