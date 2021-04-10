@@ -45,7 +45,7 @@ R_hist500 = load(strcat('R_500_',date,'.mat')); R500 = R_hist500.R_hist;
 N = length(S1);
 
 figure(111);
-plot(S1,'Color',[0 0.4470 0.7410],'LineStyle','--','LineWidth',2.0); hold on;
+plot(S1,'g-.','LineWidth',4.0); hold on;
 plot(S2,'Color',[0.8500 0.3250 0.0980],'LineStyle','-','LineWidth',2.0); hold on;
 plot(S5,'Color',[0.9290 0.6940 0.1250],'LineStyle','-','LineWidth',2.0); hold on;
 plot(S10,'Color',[0.4940 0.1840 0.5560],'LineStyle','-','LineWidth',2.0); hold on;
@@ -53,11 +53,11 @@ plot(S20,'Color',[0.4660 0.6740 0.1880],'LineStyle','-','LineWidth',2.0); hold o
 plot(S25,'Color',[0.3010 0.7450 0.9330],'LineStyle','-','LineWidth',2.0); hold on;
 plot(S50,'Color',[0.6350 0.0780 0.1840],'LineStyle','-','LineWidth',2.0); hold on;
 plot(S100,'r','LineWidth',2.0); hold on;
-plot(S250,'g','LineWidth',2.0); hold on;
+plot(S250,'Color',[0 0.4470 0.7410],'LineWidth',2.0); hold on;
 plot(S500,'b','LineWidth',2.0); hold on;
 ha=gca;
 set(ha,'yscale','log');
-set(ha,'xscale','log');
+% set(ha,'xscale','log');
 
 grid on;
 title('Cost v.s. Iterations','Interpreter','latex','FontSize',15);
@@ -99,4 +99,4 @@ lgd = legend('Shooting Phase: 1','Shooting Phase: 2','Shooting Phase: 5','Shooti
 lgd.NumColumns = 2;
 ha=gca;
 set(ha,'yscale','log');
-set(ha,'xscale','log');
+% set(ha,'xscale','log');

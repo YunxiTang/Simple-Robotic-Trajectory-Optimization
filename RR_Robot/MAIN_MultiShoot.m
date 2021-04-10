@@ -10,26 +10,26 @@ exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-log = 1;
-params.dt    = .02;
-params.T     = 10.0;
+log = 0;
+params.dt    = .01;
+params.T     = 5.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 2;
+params.shooting_phase = 100;
 params.x0    = [0.0; 0.0; 0.0; 0.0];
-params.xf    = [pi; 0.0; 0.0; 0.0];
+params.xf    = [pi;  0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
 params.nu    = 2 ;
-params.Q     = diag([0.1 0.1 0.1 0.1])*20;
+params.Q     = diag([0.1 0.1 0.1 0.1])*60;
 params.R     = 0.1* eye(params.nu);
 params.Qf    = diag([0.1 0.1 0.1 0.1])*120;
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 18;
+params.umax  = 20;
 params.umin  = -18;
 params.Debug = ~log;     % 1 -> show details
 params.plot = ~log;      % 1 -> show plots during optimization
 params.Max_iter = 500;
-params.stop = 1e-13;
+params.stop = 1e-12;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase

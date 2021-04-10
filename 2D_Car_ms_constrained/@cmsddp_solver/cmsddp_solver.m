@@ -31,7 +31,7 @@ classdef cmsddp_solver < handle
             obj.Mu = cell(obj.M,1);
             obj.Lambda = cell(obj.M, 1);
             for k = 1:obj.M
-                obj.Mu{k} = 50 * ones(constraint.n_ineq, obj.L);
+                obj.Mu{k} = 5 * ones(constraint.n_ineq, obj.L);
                 obj.Lambda{k} = zeros(constraint.n_ineq, obj.L);
             end
         end
@@ -110,6 +110,10 @@ classdef cmsddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
+                lb = params.umin * ones(params.nu, 1);
+                ub = params.umax * ones(params.nu, 1);
+                % clamp the control input
+                ui = max(lb, min(ub, ui));
                 usol(:,i) = ui;
                 % Sum up costs
                 lambda = obj.Lambda{idx}(:,i);
@@ -256,8 +260,27 @@ classdef cmsddp_solver < handle
                     end
                     
                     % Standard Recursive Equations
-                    kff = -Quu_reg\Qu;
-                    kfb = -Quu_reg\Qux;
+                    if params.qp == 1
+                        fprintf('Solve with boxQP. \n');
+                        lb = params.umin * ones(params.nu, 1);
+                        ub = params.umax * ones(params.nu, 1);
+                        lower = lb - u_ij;
+                        upper = ub - u_ij;
+                        [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                        kfb = zeros(params.nu, params.nx);
+                        if any(free)
+                            Lfree = -R\(R'\Qux(free,:));
+                            kfb(free,:) = Lfree;
+                        end
+                    else
+                        % without boxQP 
+                        % more numerical stable
+                        [R, ~] = chol(Quu_reg);
+                        kff = -R\(R'\Qu);
+                        kfb = -R\(R'\Qux);
+%                         kff = -Quu_reg\Qu;
+%                         kfb = -Quu_reg\Qux;
+                    end
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;

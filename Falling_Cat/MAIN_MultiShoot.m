@@ -19,17 +19,18 @@ params.x0    = [0.5;0.5;0.5;0.0;0.0;0.00;0.0;0.0;0.0;0.0];
 params.xf    = zeros(10,1);
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([1;1;1;0.05;0.05;1;1;1;0.05;0.05])*50;
+params.Q     = diag([1;1;1;0.00;0.00;1;1;1;0.00;0.00])*50;
 params.R     = eye(params.nu)*0.1;
-params.Qf    = diag([1;1;1;0.1;0.1;1;1;1;0.1;0.1])*500;
+params.Qf    = diag([1;1;1;0.0;0.0;1;1;1;0.0;0.0])*500;
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;     % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 5;
-params.umin  = -5;
-params.Debug = ~log;     % 1 -> show details
-params.plot = ~log;      % 1 -> show plots during optimization
+params.umax  = 0.6;
+params.umin  = -0.6;
+params.Debug = 1;     % 1 -> show details
+params.plot = 1;      % 1 -> show plots during optimization
 params.Max_iter = 100;
 params.stop = 1e-7;
+params.qp = 1;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase
@@ -47,7 +48,7 @@ cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf,params.umax,params.umin);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Function Setup %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Setup_Functions(params, fallcat, cost);
+% Setup_Functions(params, fallcat, cost);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Call Solver %%%%%%%%%%%%

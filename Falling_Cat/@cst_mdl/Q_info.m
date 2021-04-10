@@ -2,7 +2,7 @@ function [Qx,Qu,Qxx,Quu,Qux,Qxu] = Q_info(rbt,cst,x,u,Vx,Vxx,params,iter)
 %Q_INFO
 V_reg = 0.00;
 if isfield(params,'shooting_phase') 
-   V_reg = 0.00 + 0.9 / exp(iter);
+   V_reg = 0.00 + 1.0 / exp(iter);
 end
 nx = params.nx;
 Vxx = Vxx + V_reg * eye(nx) * (params.Reg_Type == 2);
