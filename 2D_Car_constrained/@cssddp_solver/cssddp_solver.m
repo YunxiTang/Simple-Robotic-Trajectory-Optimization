@@ -5,8 +5,8 @@ classdef cssddp_solver < handle
         Reg = 0.000,   % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
-        gamma = 0.1,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        gamma = 0.2,   % threshold to accept a FW step
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = [],   % store real costs
         u_perturb = [],% constrol noise
@@ -171,8 +171,26 @@ classdef cssddp_solver < handle
                     break
                 end
                 % Standard Recursive Equations
-                kff = -Quu_reg\Qu;
-                kfb = -Quu_reg\Qux;
+                if params.qp == 1 && obj.iter > 1
+                    lb = params.umin * ones(params.nu, 1);
+                    ub = params.umax * ones(params.nu, 1);
+                    lower = lb - ui;
+                    upper = ub - ui;
+                    [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                    kfb = zeros(params.nu, params.nx);
+                    if any(free)
+                        Lfree = -R\(R'\Qux(free,:));
+                        kfb(free,:) = Lfree;
+                    end
+                else
+                    % without boxQP 
+                    % more numerical stable
+                    [R, ~] = chol(Quu_reg);
+                    kff = -R\(R'\Qu);
+                    kfb = -R\(R'\Qux);
+%                         kff = -Quu_reg\Qu;
+%                         kfb = -Quu_reg\Qux;
+                end
                 du(:,i)  = kff;
                 K(:,:,i) = kfb;
                 Vx(:,i)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;

@@ -3,7 +3,7 @@ classdef planar_quadrotor < handle
     
     properties
         Name = 'Planar Quadrotor',
-        m = 1.0,
+        m = 0.8,
         g = 9.81,
         l = 0.3,
         J = 1.0,

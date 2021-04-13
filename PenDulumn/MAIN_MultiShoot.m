@@ -7,21 +7,21 @@ clear;
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
-params.dt    = .01;
-params.T     = 5.0;
+params.dt    = .02;
+params.T     = 10.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 10;
+params.shooting_phase = 1;
 params.x0    = [0.0;0.0];
 params.xf    = [3.14;0.0];
 params.nx    = numel(params.x0);
 params.nu    = 1;
 params.Q     = eye(params.nx);
-params.R     = eye(params.nu);
-params.Qf    = 10*eye(params.nx);
+params.R     = 1*eye(params.nu);
+params.Qf    = 100*eye(params.nx);
 params.Rf    = eye(params.nu);
 params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 5;
-params.umin  = -5;
+params.umax  = 3.5;
+params.umin  = -3.5;
 params.Debug = 1;     % 1 -> show details
 params.plot = 1;      % 1 -> show plots during optimization
 params.Max_iter = 500;

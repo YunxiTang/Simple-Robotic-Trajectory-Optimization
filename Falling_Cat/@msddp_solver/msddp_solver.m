@@ -8,7 +8,7 @@ classdef msddp_solver < handle
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.2,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = [],   % store real costs
         Contract_Rate = []
@@ -77,11 +77,10 @@ classdef msddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
-                for k=1:params.nu
-                    if abs(ui(k)) > params.umax
-                        ui(k) = sign(ui(k))*params.umax;
-                    end
-                end
+                lb = params.umin * ones(params.nu, 1);
+                ub = params.umax * ones(params.nu, 1);
+                % clamp the control input
+%                 ui = max(lb, min(ub, ui));
                 usol(:,i) = ui;
                 
                 % Sum up costs
@@ -150,8 +149,8 @@ classdef msddp_solver < handle
                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
                     
                     %%% Method 2: From Control Toolbox of ETHz
-                    [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end), params.dt);
-                    tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
+%                     [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end), params.dt);
+%                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
 %                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
@@ -207,23 +206,41 @@ classdef msddp_solver < handle
                         if params.Debug == 1
                             fprintf(' \t \t [SubSubInfo]: Reg=%5f:  Regularization <-- Increase Reg. \n', obj.Reg);
                         end
-                        break
+                        return
                     end
                     
                     % Standard Recursive Equations
-                    kff = -Quu_reg\Qu;
-                    kfb = -Quu_reg\Qux;
+                    % add boxQP solver here
+                    
+                    if params.qp == 1
+                        lb = params.umin * ones(params.nu, 1);
+                        ub = params.umax * ones(params.nu, 1);
+                        lower = lb - u_ij;
+                        upper = ub - u_ij;
+                        [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                        kfb = zeros(params.nu, params.nx);
+                        if any(free)
+                            Lfree = -R\(R'\Qux(free,:));
+                            kfb(free,:) = Lfree;
+                        end
+                    else
+                        % without boxQP 
+                        % more numerical stable
+                        [R, ~] = chol(Quu_reg);
+                        kff = -R\(R'\Qu);
+                        kfb = -R\(R'\Qux);
+%                         kff = -Quu_reg\Qu;
+%                         kfb = -Quu_reg\Qux;
+                    end
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
+                    
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
                     Vxx{i}(:,:,j) = Qxx + Qxu*kfb + kfb'*Qux + kfb'*Quu*kfb;
                     alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
                     dV = alpha * delta1 + 1/2*alpha^2*delta2;
-                end
-                if success == 0
-                    break
                 end
             end
             if params.Debug == 1
@@ -243,7 +260,7 @@ classdef msddp_solver < handle
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
                 ratio = (V - Vprev)/(dV);
-                if params.Debug < 3
+                if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
                           alpha,V-Vprev, obj.gamma*dV,ratio);
                 end
@@ -291,18 +308,19 @@ classdef msddp_solver < handle
                 obj.Reg = 1e-3;
                 %%% Forward Pass
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,params);
-                obj.Update_iter();
+                
                 [dft] = obj.CalDefect(xbar,params);
                 change = Vprev - Vbar;
                 if abs(change) < params.stop 
                     break
                 end
+                obj.Update_iter();
             end
             [xsol, usol, Ksol] = obj.assemble_solution(xbar, ubar, K, params);
         end
         
         function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
-            %%% assemble the final solution
+            %%% Assemble the final solution
             if 1 < params.shooting_phase
                 xsol = xbar{1}(:,1:(end-1));
                 usol = ubar{1}(:,1:(end-1));

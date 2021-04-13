@@ -8,10 +8,10 @@ close all;
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log               = 0;       % data log flag  
-params.dt         = .025;
-params.T          = 5.0;
+params.dt         = .01;
+params.T          = 10.0;
 params.N          = params.T / params.dt;
-params.x0         = [0.0;0.0;0.0;0.0];
+params.x0         = [1.6;1.5;0.0;0.0];
 params.xf         = [2.5;3.5;0.0;0.0];
 params.nx         = numel(params.x0);
 params.nu         = 2;
@@ -28,6 +28,7 @@ params.Max_iter   = 500;
 params.stop       = 1e-9;
 taxis             = linspace(0,params.T,params.N);
 params.tax        = taxis;
+params.qp         = 0;
 params.MapNo      = 1;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -39,8 +40,8 @@ params.MapNo      = 1;
 %%%% |-----+------+-----+-----|  %%%
 %%%% | r1  |  r2  | ... |  rm |  %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Obstacles = [0.8 1.8 2.7;
-             1.2 2.0 2.5;
+Obstacles = [0.8 1.5 2.7;
+             1.2 2.5 2.5;
              0.5 0.5 0.5];
 Constraints = constraint(Obstacles);
 
@@ -84,4 +85,7 @@ end
 plot(zeros(params.N),'r-.','LineWidth',2.0);hold on;
 title('Constraint Violation','Interpreter','latex','FontSize',20);
 grid on;
+
+figure();
+plot(taxis,ubar,'LineWidth',2.0);
 

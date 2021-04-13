@@ -1,9 +1,9 @@
 %%%%% Finite Difference Method to linearize system dynamics
 x0 = [1;1];
 J0 =  Finite_Diff(@(x)F(x),x0);
-N = 50;
-X = linspace(0.0, 2*pi, N);
-Y = linspace(0.0, 2*pi, N);
+N = 500;
+X = linspace(0.0, pi, N);
+Y = linspace(0.0, pi, N);
 Q = [X;
      Y];
 FDM_J = zeros(4, N);
@@ -16,9 +16,20 @@ for i=1:N
     Ana_J(:,i) = reshape(J_ana,4,1);
 end
 figure();
-plot(1:N,FDM_J,'b-s','LineWidth',3.0);hold on;
-plot(1:N,Ana_J,'r-o','LineWidth',2.0);hold off;
+yyaxis left;h2=plot(1:N,Ana_J,'r-','LineWidth',4.0);hold on;
+h1=plot(1:N,FDM_J,'b-','LineWidth',1.5);
 
+grid on;
+
+xlabel('$Sample\;Points$',...
+       'Interpreter','latex','Fontsize',14);
+ylabel('$Jacobians$','Interpreter','latex','Fontsize',14);
+
+yyaxis right;
+h3=plot(1:N,FDM_J-Ana_J,'k--','LineWidth',1.0);
+legend([h1(1),h2(1),h3(1)],'$FDM\;Jacobian$','$Ground\;Truth$','$Error$',...
+       'Interpreter','latex','Fontsize',14);
+%% functions
 function [dq] = F(q)
     x1 = q(1);
     x2 = q(2);
@@ -31,7 +42,7 @@ function J = Finite_Diff(func, qbar, dq)
     if nargin == 3
         h = dq;
     else
-        h = 1e-3;
+        h = 1e-4;
     end
     Nx = numel(qbar);
     J = zeros(Nx,Nx);
