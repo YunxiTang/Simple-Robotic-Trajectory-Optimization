@@ -69,9 +69,12 @@ classdef msddp_solver < handle
             for i=1:(obj.L-1)
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
-                ui = ubar(:,i) + alpha*(du(:,i)+0/(1.5*obj.iter+1)*rand(1)) + K(:,:,i)*dxi;
-                if abs(ui) > params.umax
-                    ui = sign(ui)*params.umax;
+                ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
+                if params.clamp == 1
+                    lb = params.umin * ones(params.nu, 1);
+                    ub = params.umax * ones(params.nu, 1);
+                    % clamp the control input
+                    ui = max(lb, min(ub, ui));
                 end
                 usol(:,i) = ui;
                 % Sum up costs
@@ -91,8 +94,7 @@ classdef msddp_solver < handle
             for k = 1:obj.M
                 % make initial guess of intermediate states
                 xbar{k} = zeros(params.nx, obj.L);
-%                 ubar{k} = zeros(params.nu, obj.L);
-                ubar{k} = 5*ones(params.nu, obj.L);
+                ubar{k} = rbt.m * rbt.g / 2 * ones(params.nu, obj.L);
                 xbar{k}(:,1) = params.x0 + (k-1) * (params.xf - params.x0) ./ obj.M;
             end
             du = zeros(params.nu, obj.L);
@@ -132,14 +134,14 @@ classdef msddp_solver < handle
                     x0 = xbar{i}(:,1);
                 else
                     %%% Method 1: From Crocoddyl
-                    % x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
                     
                     %%% Method 2: From Control Toolbox of ETHz
                     [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
                     fx = (fx_pre * 2) / 2;
                     fu = (fu_pre * 2) / 2;
                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
+%                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -199,8 +201,26 @@ classdef msddp_solver < handle
                     end
                     
                     % Standard Recursive Equations
-                    kff = -Quu_reg\Qu;
-                    kfb = -Quu_reg\Qux;
+                    if params.qp == 1 
+                        lb = params.umin * ones(params.nu, 1);
+                        ub = params.umax * ones(params.nu, 1);
+                        lower = lb - u_ij;
+                        upper = ub - u_ij;
+                        [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                        kfb = zeros(params.nu, params.nx);
+                        if any(free)
+                            Lfree = -R\(R'\Qux(free,:));
+                            kfb(free,:) = Lfree;
+                        end
+                    else
+                        % without boxQP 
+                        % more numerical stable
+                        [R, ~] = chol(Quu_reg);
+                        kff = -R\(R'\Qu);
+                        kfb = -R\(R'\Qux);
+%                         kff = -Quu_reg\Qu;
+%                         kfb = -Quu_reg\Qux;
+                    end
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;

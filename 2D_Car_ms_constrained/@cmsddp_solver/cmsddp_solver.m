@@ -8,13 +8,13 @@ classdef cmsddp_solver < handle
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.1,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = []    % store real costs
         u_perturb = [],% constrol noise
         Lambda     ,   % dual variabels.      
         Mu         ,   % penalty multipliers. 
-        phi = 5,       % penalty scaling parameter
+        phi = 50,       % penalty scaling parameter
         Constraint,     % constraints
         ctrst_vil
     end
@@ -31,7 +31,7 @@ classdef cmsddp_solver < handle
             obj.Mu = cell(obj.M,1);
             obj.Lambda = cell(obj.M, 1);
             for k = 1:obj.M
-                obj.Mu{k} = 5 * ones(constraint.n_ineq, obj.L);
+                obj.Mu{k} = 10 * ones(constraint.n_ineq, obj.L);
                 obj.Lambda{k} = zeros(constraint.n_ineq, obj.L);
             end
         end
@@ -110,10 +110,12 @@ classdef cmsddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
-                lb = params.umin * ones(params.nu, 1);
-                ub = params.umax * ones(params.nu, 1);
-                % clamp the control input
-                ui = max(lb, min(ub, ui));
+                if params.clamp == 1
+                    lb = params.umin * ones(params.nu, 1);
+                    ub = params.umax * ones(params.nu, 1);
+                    % clamp the control input
+                    ui = max(lb, min(ub, ui));
+                end
                 usol(:,i) = ui;
                 % Sum up costs
                 lambda = obj.Lambda{idx}(:,i);
@@ -260,7 +262,7 @@ classdef cmsddp_solver < handle
                     end
                     
                     % Standard Recursive Equations
-                    if params.qp == 1
+                    if params.qp == 1 && obj.iter > 4
                         fprintf('Solve with boxQP. \n');
                         lb = params.umin * ones(params.nu, 1);
                         ub = params.umax * ones(params.nu, 1);

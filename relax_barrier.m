@@ -1,14 +1,14 @@
 %%% relaxed barrier function
 clc;
 clear;
-x1 = -15:0.1:200;
-x2 = 0:0.00001:200;
-x3 = 0:0.1:200;
+x1 = -1:0.1:1;
+x2 = 0:0.00001:1;
+x3 = 0:0.1:1;
 N = length(x1);
 y1 = zeros(N,1);
 for i=1:N
     z = x1(i);
-    y1(i) = relaxed_barrier(z, 5);
+    y1(i) = 30.0*relaxed_barrier(z, 0.05);
 end
 
 y2 = barrier(x2);
@@ -28,7 +28,7 @@ function value = relaxed_barrier(x, delta)
         value = -log(x);
     else
         value = 1/2*(((x-2*delta)/delta).^2-1)-log(delta);
-    end        
+    end  
 end
 
 function value = barrier(x)

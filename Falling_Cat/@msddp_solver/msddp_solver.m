@@ -8,7 +8,7 @@ classdef msddp_solver < handle
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.2,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = [],   % store real costs
         Contract_Rate = []
@@ -80,7 +80,7 @@ classdef msddp_solver < handle
                 lb = params.umin * ones(params.nu, 1);
                 ub = params.umax * ones(params.nu, 1);
                 % clamp the control input
-                ui = max(lb, min(ub, ui));
+%                 ui = max(lb, min(ub, ui));
                 usol(:,i) = ui;
                 
                 % Sum up costs

@@ -8,7 +8,7 @@ classdef msddp_solver < handle
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.2,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = [],   % store real costs
         Contract_Rate = []
@@ -82,6 +82,13 @@ classdef msddp_solver < handle
                         ui(k) = sign(ui(k))*params.umax;
                     end
                 end
+                
+                % clamp the control input
+                if params.clamp ==1 
+                    lb = params.umin * ones(params.nu, 1);
+                    ub = params.umax * ones(params.nu, 1);
+                    ui = max(lb, min(ub, ui));
+                end
                 usol(:,i) = ui;
                 
                 % Sum up costs
@@ -152,7 +159,7 @@ classdef msddp_solver < handle
                     %%% Method 2: From Control Toolbox of ETHz
                     [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end), params.dt);
                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
+%                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -211,8 +218,26 @@ classdef msddp_solver < handle
                     end
                     
                     % Standard Recursive Equations
-                    kff = -Quu_reg\Qu;
-                    kfb = -Quu_reg\Qux;
+                    if params.qp == 1 && obj.iter > 1
+                        lb = params.umin * ones(params.nu, 1);
+                        ub = params.umax * ones(params.nu, 1);
+                        lower = lb - u_ij;
+                        upper = ub - u_ij;
+                        [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                        kfb = zeros(params.nu, params.nx);
+                        if any(free)
+                            Lfree = -R\(R'\Qux(free,:));
+                            kfb(free,:) = Lfree;
+                        end
+                    else
+                        % without boxQP 
+                        % more numerical stable
+                        [R, ~] = chol(Quu_reg);
+                        kff = -R\(R'\Qu);
+                        kfb = -R\(R'\Qux);
+%                         kff = -Quu_reg\Qu;
+%                         kfb = -Quu_reg\Qux;
+                    end
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;

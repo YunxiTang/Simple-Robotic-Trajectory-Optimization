@@ -48,6 +48,11 @@ classdef ddp_solver < handle
             plot(xbar(1,:),xbar(2,:),'k-','LineWidth',1.0);hold on;
             plot(xbar(1,1:5:end),xbar(2,1:5:end),'ro','LineWidth',2.0,'MarkerSize',8.0);hold off;
             grid on;
+            
+            figure(666);
+            plot(params.tax(1:end-1),ubar(:,1:end-1),'LineWidth',2.0);hold off;
+            grid on;
+            pause();
         end
         
         function [xbar, ubar] = Init_Forward(obj,rbt,params)
@@ -62,7 +67,7 @@ classdef ddp_solver < handle
                 % Option 1: PD Control
 %                 ui = -[15 5] * (xi - params.xf);
                 % Option 2: Zero Control
-                ui = zeros(params.nu,1);
+                ui = rbt.m * rbt.g / 2 * ones(params.nu,1);
                 % Option 3: Random Control
                 ubar(:,i) = ui;
                 xi = rbt.rk(xi,ui,params.dt);
@@ -84,8 +89,12 @@ classdef ddp_solver < handle
                 % Update with stepsize and feedback
                 % add noise to action-space (faster convergence for simple system)
                 ui = ubar(:,i) + alpha*(du(:,i)+ 0.0 / obj.iter * obj.u_perturb(:,i)) + K(:,:,i)*dxi;
-                if abs(ui) > params.umax
-                    ui = sign(ui)*params.umax;
+                
+                if params.clamp == 1
+                    lb = params.umin * ones(params.nu, 1);
+                    ub = params.umax * ones(params.nu, 1);
+                    % clamp the control input
+                    ui = max(lb, min(ub, ui));
                 end
                 u(:,i) = ui;
                 % Sum up costs
@@ -134,8 +143,24 @@ classdef ddp_solver < handle
                     break
                 end
                 % Standard Recursive Equations
-                kff = -Quu_reg\Qu;
-                kfb = -Quu_reg\Qux;
+                if params.qp == 1 && obj.iter > 3
+                    lb = params.umin * ones(params.nu, 1);
+                    ub = params.umax * ones(params.nu, 1);
+                    lower = (lb - ui);
+                    upper = (ub - ui);
+                    [kff,~,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                    kfb = zeros(params.nu, params.nx);
+                    if any(free)
+                        Lfree = -R\(R'\Qux(free,:));
+                        kfb(free,:) = Lfree;
+                    end
+                else
+                    % without boxQP 
+                    % more numerical stable
+                    [R, ~] = chol(Quu_reg);
+                    kff = -R\(R'\Qu);
+                    kfb = -R\(R'\Qux);
+                end
                 du(:,i)  = kff;
                 K(:,:,i) = kfb;
                 Vx(:,i)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
