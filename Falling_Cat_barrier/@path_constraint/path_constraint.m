@@ -1,17 +1,16 @@
-classdef constraint < handle
-    %CONSTRAINT Summary of this class goes here
-    %   Detailed explanation goes here
+classdef path_constraint < handle
+    %path_CONSTRAINT path_constraint
     
     properties
-        delta = 0.01,
-        mu = 5,
-        t = 1,
+        delta = 0.001,
+        mu = 50,
+        t = 1
     end
     
     methods
-        function obj = constraint(t, mu, delta)
+        function obj = path_constraint(t, mu, delta)
             %CONSTRAINT Construct an instance of this class
-            fprintf('[INFO]: Creating Constraint for Optimization Problem. \n');
+            fprintf('[INFO]: Creating Path Constraint for Optimization Problem. \n');
             if nargin > 1
                 obj.t = t;
                 obj.mu = mu;
@@ -20,7 +19,7 @@ classdef constraint < handle
         end
         
         function [] = update_t(obj)
-            obj.t = obj.t / obj.mu;
+            obj.t = obj.t + obj.mu;            
         end
         
         function Penalty = penalty(obj, x, u)
@@ -28,11 +27,11 @@ classdef constraint < handle
             Nc = length(cons_value);
             pent = zeros(Nc, 1);
             for i=1:Nc
-                if cons_value(i) > obj.delta
+                if -cons_value(i) > obj.delta
                     pent(i) = 1/obj.t * (-log(-cons_value(i)));
                 else
                     h = cons_value(i);
-                    pent(i) = 1/obj.t * 1/2*(((h-2*obj.delta)/obj.delta).^2-1)-log(obj.delta);
+                    pent(i) = 1/obj.t * (1/2*(((-h-2*obj.delta)/obj.delta).^2-1)-log(obj.delta));
                 end
             end
             Penalty = sum(pent);
@@ -54,14 +53,14 @@ classdef constraint < handle
             Cu = obj.cu(x, u);
             for i=1:Nc
                 Ci = C(i);
-                if C(i) > obj.delta
+                if -C(i) > obj.delta
                     Penal_x = Penal_x + 1/obj.t * (- 1 / Ci * Cx(i,:)');
                     Penal_u = Penal_u + 1/obj.t * (- 1 / Ci * Cu(i,:)');
                     Penal_xx = Penal_xx + 1/obj.t * 1 / (Ci^2) * Cx(i,:)'*Cx(i,:);
                     Penal_uu = Penal_uu + 1/obj.t * 1 / (Ci^2) * Cu(i,:)'*Cu(i,:);
                     
                 else
-                    T = (-4*obj.delta - 2*Ci) / (2*obj.delta^2);
+                    T = (2*obj.delta + Ci) / (obj.delta^2);
                     Penal_x = Penal_x + 1/obj.t * (T * Cx(i,:)');
                     Penal_u = Penal_u + 1/obj.t * (T * Cu(i,:)');
                     Penal_xx = Penal_xx + 1/obj.t * 1 / obj.delta^2 * Cx(i,:)'*Cx(i,:);

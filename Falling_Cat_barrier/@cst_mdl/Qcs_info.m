@@ -1,12 +1,12 @@
-function [Qx,Qu,Qxx,Quu,Qux,Qxu] = Qcs_info(rbt,cst,x,u,Vx,Vxx,params,cons)
+function [Qx,Qu,Qxx,Quu,Qux,Qxu] = Qcs_info(rbt,cst,x,u,xref,uref,Vx,Vxx,params,path_constraint)
 %Qms_INFO : For multiple shooting DDP/SLQ
 if nargin == 7
     nx = params.nx;
     Vxx = Vxx + 0.1 * eye(nx) * (params.Reg_Type == 2);
 end
 [fx,fu] = rbt.getLinSys(x,u,params.dt);
-[~, Penal_x, Penal_u, Penal_xu, Penal_ux, Penal_xx, Penal_uu] = cons.penalty_info(x, u);
-[~,lx,lu,lxx,lux,lxu,luu] = cst.l_info(x,u,params.xf,zeros(params.nu,1));
+[~, Penal_x, Penal_u, Penal_xu, Penal_ux, Penal_xx, Penal_uu] = path_constraint.penalty_info(x, u);
+[~,lx,lu,lxx,lux,lxu,luu] = cst.l_info(x,u,xref,uref);
 Qx = lx + Penal_x + fx.' * (Vx);
 Qu = lu + Penal_u + fu.' * (Vx);
 Qxx = lxx + Penal_xx + fx.' * Vxx * fx;

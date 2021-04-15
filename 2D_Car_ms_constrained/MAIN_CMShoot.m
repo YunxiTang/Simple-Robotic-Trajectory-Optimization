@@ -12,27 +12,27 @@ exp_date = date;
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
-params.dt               =  .02;
+params.dt               =  .01;
 params.T                =  10.0;
 params.N                = params.T / params.dt;
-params.shooting_phase   = 100;
+params.shooting_phase   = 50;
 params.x0               = [0.0;0.0;0.0;0.0];
-params.xf               = [2.8;2.8;pi/2;0.0];
+params.xf               = [3.0;3.0;0.0;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 2;
 params.Q                = diag([0.1 0.1 0.1 0.1]);
 params.R                = diag([0.1 0.1]);
-params.Qf               = diag([50 50 50 50])*10;
+params.Qf               = diag([50 50 50 50])*5;
 params.Rf               = eye(params.nu);
-params.Reg_Type         = 1;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax             = 3.5;
-params.umin             = -3.5;
+params.Reg_Type         = 2;  % 1->reg of Quu  / 2->reg of Vxx
+params.umax             = 4.2;
+params.umin             = -4.2;
 params.Debug            = 1;     % 1 -> show details
 params.plot             = 1;     % 1 -> show plots during optimization
 params.Max_iter         = 500;
 params.stop             = 1e-9;
-params.qp               = 1;
-params.clamp            = 0;
+params.qp               = 0;
+params.clamp            = 1;
 nt                      = params.T / params.shooting_phase;
 tax                     = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase
@@ -57,9 +57,9 @@ params.MapNo = 1;
 % Obstacles = [0.6 0.5 2.0 3.0;
 %              0.4 1.0 2.0 2.4;
 %              0.1 0.3 0.5 0.2];
-Obstacles = [1.5 ;
-             1.5 ;
-             0.7 ];
+Obstacles = [1.3 2.0;
+             1.3 2.5;
+             0.42 0.2];
 Constraints = constraint(Obstacles, params.dt);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%

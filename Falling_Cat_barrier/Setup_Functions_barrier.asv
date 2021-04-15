@@ -31,8 +31,8 @@ matlabFunction(cu, 'vars', {x, u}, 'file', '@path_constraint/cu', 'optimize',1==
 % final state constraint
 final_c = final_constraint(x);
 final_cx = jacobian(final_c, x);
-matlabFunction(final_c,  'vars', {x}, 'file', '@final_constraint/final_c',  'optimize',1==1);
-matlabFunction(final_cx, 'vars', {x}, 'file', '@final_constraint/final_cx', 'optimize',1==1);
+matlabFunction(final_c,  'vars', {x, u}, 'file', '@path_constraint/c',  'optimize',1==1);
+matlabFunction(final_cx, 'vars', {x, u}, 'file', '@path_constraint/cx', 'optimize',1==1);
 
 % stage cost
 l = 1/2*(x-xref).'*Q*(x-xref) + 1/2*(u-uref).'*R*(u-uref);
@@ -45,12 +45,13 @@ lf = 1/2*(x-xf).'*Qf*(x-xf);
 lx   = jacobian(l,x)';  lu  = jacobian(l,u)';
 lxx  = jacobian(lx,x);  luu  = jacobian(lu,u);
 lux  = jacobian(lu,x);  lxu  = jacobian(lx,u);
-lfx  = jacobian(lf, x)'; lfxx = jacobian(lfx,x);
+lfx  = jacobian(lf, x); lfxx = jacobian(lfx,x);
 
 matlabFunction(l,  'vars', {x, u, xref, uref}, 'file', '@cst_mdl/l_cost',  'optimize',1==1);
 matlabFunction(lf, 'vars', {x},                'file', '@cst_mdl/lf_cost', 'optimize',1==1);
 matlabFunction(lf, lfx, lfxx, 'vars', {x},     'file', '@cst_mdl/lf_info', 'optimize',1==1);
-matlabFunction(l,  lx,  lu, lxx, lux, lxu, luu, 'vars', {x, u, xref, uref}, 'file', '@cst_mdl/l_info','optimize', 1==1);
+matlabFunction(l,  lx,  lu, lxx, lux, lxu, luu,'vars',{x, u, xref, uref},...
+               'file','@cst_mdl/l_info','optimize',1==1);
 
 %%% derive  dynamics and compute anylytical derivatives
 % f = rbtmdl.Dynamics(0.0, x, u);
