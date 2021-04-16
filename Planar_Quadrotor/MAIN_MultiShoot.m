@@ -14,7 +14,7 @@ log = 0;
 params.dt    = .01;
 params.T     = 6.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 20;
+params.shooting_phase = 1;
 params.x0    = [4.0; 0.0; -0.8; 0.0; 0.0; 0.0];
 params.xf    = [0.0; 0.0; 0.0; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
@@ -30,8 +30,8 @@ params.Debug = ~log;     % 1 -> show details
 params.plot = ~log;      % 1 -> show plots during optimization
 params.Max_iter = 500;
 params.stop = 1e-9;
-params.qp = 1;        % 1 -> BoxQP for input constraint
-params.clamp = 0;        % 1 -> clamp for input constraint
+params.qp = 0;        % 1 -> BoxQP for input constraint
+params.clamp = 1;        % 1 -> clamp for input constraint
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase
@@ -58,7 +58,7 @@ solver = msddp_solver(params);
 
 tstart = tic;
 [xsol, usol, Ksol] = solver.Solve(planar_quad,cost,params);
-telapsed = toc(tstart)
+telapsed = toc(tstart);
 
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0);
