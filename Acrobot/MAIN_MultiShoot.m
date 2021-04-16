@@ -11,7 +11,7 @@ exp_date = date;
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
-params.dt    = .02;
+params.dt    = .05;
 params.T     = 10.0;
 params.N     = params.T / params.dt;
 params.shooting_phase = 1;

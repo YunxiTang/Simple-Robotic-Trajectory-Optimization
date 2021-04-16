@@ -15,21 +15,24 @@ log = 0;
 params.dt               =  .01;
 params.T                =  10.0;
 params.N                = params.T / params.dt;
-params.shooting_phase   = 50;
+params.shooting_phase   = 500;
 params.x0               = [0.0;0.0;0.0;0.0];
 params.xf               = [3.0;3.0;0.0;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 2;
-params.Q                = diag([0.1 0.1 0.1 0.1]);
-params.R                = diag([0.1 0.1]);
-params.Qf               = diag([50 50 50 50])*5;
+% params.Q                = diag([0.1 0.1 0.1 0.1]);
+% params.R                = diag([0.1 0.1]);
+% params.Qf               = diag([50 50 50 50])*50;
+params.Q     = diag([1 1 1 1]);
+params.R     = diag([0.1 0.1]);
+params.Qf    = diag([10 10 5 5]);
 params.Rf               = eye(params.nu);
-params.Reg_Type         = 2;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax             = 4.2;
-params.umin             = -4.2;
+params.Reg_Type         = 2;     % 1->reg of Quu  / 2->reg of Vxx
+params.umax             = 4.5;
+params.umin             = -4.5;
 params.Debug            = 1;     % 1 -> show details
 params.plot             = 1;     % 1 -> show plots during optimization
-params.Max_iter         = 500;
+params.Max_iter         = 1000;
 params.stop             = 1e-9;
 params.qp               = 0;
 params.clamp            = 1;
@@ -57,9 +60,13 @@ params.MapNo = 1;
 % Obstacles = [0.6 0.5 2.0 3.0;
 %              0.4 1.0 2.0 2.4;
 %              0.1 0.3 0.5 0.2];
-Obstacles = [1.3 2.0;
-             1.3 2.5;
-             0.42 0.2];
+% Obstacles = [1.3 2.0;
+%              1.3 2.5;
+%              0.42 0.2];
+Obstacles = [0.0 1.3 2.0;
+             1.0 1.3 2.5;
+             0.5 0.6 0.5];
+
 Constraints = constraint(Obstacles, params.dt);
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -80,11 +87,15 @@ Setup_Functions(params, car, cost, Constraints);
 solver = cmsddp_solver(Constraints, params);
 
 tstart = tic;
-[xsol, usol, Ksol, Lambdasol, dft] = solver.Solve(car,cost,params);
+[xsol, usol, Ksol, Lambdasol, dft, xbar, ubar] = solver.Solve(car,cost,params);
 telapsed = toc(tstart)
 
 figure(888);
-plot(solver.Jstore,'b-o','LineWidth',2.0);
+plot(solver.Jstore,'b-o','LineWidth',2.0,'MarkerSize',3);
+ha=gca;
+set(ha,'yscale','log');
+set(ha,'xscale','log');
+grid on;
 J_hist = solver.Jstore;
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -138,3 +149,9 @@ if log == 1
     save(file_name2,'J_hist');
     save(file_name3,'Max_vio');
 end
+
+% save coarse solution
+filename_x = '.\x_al';
+save(filename_x,'xbar');
+filename_u = '.\u_al';
+save(filename_u,'ubar');

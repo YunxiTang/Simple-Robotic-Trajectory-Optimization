@@ -27,7 +27,7 @@ params.Reg_Type = 1;        % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 0.5;
 params.umin  = -0.5;
 params.Debug = 1;           % 1 -> show details
-params.plot = 0;            % 1 -> show plots during optimization
+params.plot = 1;            % 1 -> show plots during optimization
 params.Max_iter = 500;
 params.stop = 1e-7;
 params.qp = 0;
@@ -91,6 +91,10 @@ telapsed = toc(tstart);
 %% plot
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0);
+ha=gca;
+set(ha,'yscale','log');
+set(ha,'xscale','log');
+grid on;
 J_hist = solver.Jstore;
 R_hist = solver.Contract_Rate;
 

@@ -1,6 +1,6 @@
 function demoQP()
     options = [100 1e-8 1e-8 0.6 1e-22 0.1 2]; % defaults with detailed printing
-    n 		= 5;
+    n 		= 15;
     rng(10);
     g 		= randn(n,1);
     H 		= randn(n,n);

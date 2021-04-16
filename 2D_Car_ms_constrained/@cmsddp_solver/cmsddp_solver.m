@@ -332,7 +332,7 @@ classdef cmsddp_solver < handle
             end
         end
         
-        function [xsol, usol, Ksol, Lambdasol, dft] = Solve(obj,rbt,cst,params)
+        function [xsol, usol, Ksol, Lambdasol, dft, xbar, ubar] = Solve(obj,rbt,cst,params)
             % solve OCP
             % init rolling out
             
