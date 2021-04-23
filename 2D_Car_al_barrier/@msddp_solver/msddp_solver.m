@@ -53,15 +53,17 @@ classdef msddp_solver < handle
             title('Phase Portrait','Interpreter','latex','FontSize',20);
             grid on;
             hold off;
-            
-            for i = 1:obj.M
-                clr = [i, 0.5 * i, 0.5 * i] / obj.M;
+            for j=1:params.nu
                 figure(222);
-                plot(params.t{i}(1,:),ubar{i},'Color',clr,'LineWidth',2.0);hold on; 
+                subplot(params.nu,1,j);
+                for i = 1:obj.M
+                    clr = [i, 0.5 * i, 0.5 * i] / obj.M;
+                    plot(params.t{i}(1:end-1),ubar{i}(j,1:end-1),'Color',clr,'LineWidth',2.0);hold on; 
+                end
+                title('Control Input','Interpreter','latex','FontSize',20);
+                grid on;
+                hold off;
             end
-            title('Control Input','Interpreter','latex','FontSize',20);
-            grid on;
-            hold off;
             
             figure(555);
             title('Defects','Interpreter','latex','FontSize',15);
@@ -124,7 +126,7 @@ classdef msddp_solver < handle
             else
                 for k = 1:obj.M
                     % make initial guess of intermediate states
-                    xbar{k} = kron(zeros(1, obj.L), params.xf);
+                    xbar{k} = kron(ones(1, obj.L), params.xf);
                     ubar{k} = 0.00*sin([1:1:obj.L;1:1:obj.L]); %zeros(params.nu, obj.L)
                     xbar{k}(:,1) = params.x0 + (k-1) * (params.xf - params.x0) ./ obj.M;
                 end
@@ -300,7 +302,7 @@ classdef msddp_solver < handle
             end
             obj.J_pushback(V);
             obj.Rate_pushback(ratio);
-            if params.plot == 1 && mod(obj.iter,2) == 0
+            if params.plot == 1 && mod(obj.iter,1) == 0
                obj.solver_Callback(x,u,params);
             end
         end
@@ -335,11 +337,11 @@ classdef msddp_solver < handle
                 change = Vprev - Vbar;
                 DU = cell2mat(du);
                 DU = reshape(DU,(params.nu*params.shooting_phase*obj.L),1);
-                if (change) < params.stop && obj.iter > 5 || all(DU<1e-5)
+                if (change) < params.stop && obj.iter > 5 || all(DU<1e-4)
                     break
                 end
                 obj.Update_iter();
-                if mod(obj.iter, 1)==0
+                if mod(obj.iter, 5)==0
                     path_constraint.update_t();
                 end
             end

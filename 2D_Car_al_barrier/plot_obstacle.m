@@ -11,14 +11,15 @@ for i=1:n_ineq
     yi_c = obstacle(2,i);
     cx = xi_c + r*cos(aplha);
     cy = yi_c + r*sin(aplha);
-    clr = abs([sin(i/1.2) sin(i/1.5) sin(i)]);
-    plot(cx, cy, '-','Color',clr); hold on;
-    fill(cx, cy, clr);
+    clr = abs([sin(i/0.5) sin(i/1.5) sin(i/2.5)]);
+    hold on;
+    h = fill(cx, cy, clr);
+    set(h,'edgealpha',0.1,'facealpha',0.7);
     axis equal;
 end
-xlabel('$x$','Interpreter','latex','FontSize',15);
-ylabel('$y$','Interpreter','latex','FontSize',15);
-title("$2D\;Map$", 'Interpreter','latex','FontSize',15);
+xlabel('$x$','Interpreter','latex','FontSize',20);
+ylabel('$y$','Interpreter','latex','FontSize',20);
+title("$Nonholonomic\;Vehicle$", 'Interpreter','latex','FontSize',20);
 grid on;
 Flag = 1;
 end

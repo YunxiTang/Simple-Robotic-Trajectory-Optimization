@@ -14,7 +14,7 @@ classdef cmsddp_solver < handle
         u_perturb = [],% constrol noise
         Lambda     ,   % dual variabels.      
         Mu         ,   % penalty multipliers. 
-        phi = 20,       % penalty scaling parameter
+        phi = 5,       % penalty scaling parameter
         Constraint,     % constraints
         ctrst_vil
     end
@@ -31,7 +31,7 @@ classdef cmsddp_solver < handle
             obj.Mu = cell(obj.M,1);
             obj.Lambda = cell(obj.M, 1);
             for k = 1:obj.M
-                obj.Mu{k} = 20 * ones(constraint.n_ineq, obj.L);
+                obj.Mu{k} = 5 * ones(constraint.n_ineq, obj.L);
                 obj.Lambda{k} = zeros(constraint.n_ineq, obj.L);
             end
         end
@@ -109,7 +109,7 @@ classdef cmsddp_solver < handle
             for i=1:(obj.L-1)
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
-                ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
+                ui = ubar(:,i) + alpha*(du(:,i) + randn(params.nu,1) / exp(obj.iter+2)) + K(:,:,i)*dxi;
                 if params.clamp == 1
                     lb = params.umin * ones(params.nu, 1);
                     ub = params.umax * ones(params.nu, 1);
@@ -309,7 +309,7 @@ classdef cmsddp_solver < handle
             V = 0;
             obj.eps = 1.0;
             alpha = obj.eps;
-            while alpha > 1e-12
+            while alpha > 1e-5
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);

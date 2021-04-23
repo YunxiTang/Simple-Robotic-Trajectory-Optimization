@@ -12,25 +12,26 @@ exp_date = 'RLB';
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
 log = 0;
 params.dt    = .01;
-params.T     = 4.0;
+params.T     = 2.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 5;
+params.shooting_phase = 200;
 params.x0    = [4.0; 4.0; 0.0; 0.0; 0.0; 0.0];
-params.xf    = [0.0; 0.0; 0.0; 0.0; 0.0; 0.0];
+params.xf    = [2.0; 1.0; 0.0; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([1 1 1 1 1 1]);
+params.Q     = diag([1 1 1 1 1 1])*4;
 params.R     = diag([0.1 0.1]);
 params.Qf    = diag([5 5 5 5 5 5]);
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 4.5;
+params.umax  = 5.0;
 params.umin  = 0.1;
 params.Debug = 1;           % 1 -> show details
 params.plot = 1;            % 1 -> show plots during optimization
 params.Max_iter = 1000;
 params.stop = 1e-9;
 params.qp = 1;
+
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase
@@ -57,11 +58,11 @@ path_constraint_func = @(x,u)([0.6*0.6 - ((x(1)-2.0)*(x(1)-2.0)+(x(2)-2.0)*(x(2)
                                0.5*0.5 - ((x(1)-3.0)*(x(1)-3.0)+(x(2)-1.0)*(x(2)-1.0));
                                0.6*0.6 - ((x(1)-4.0)*(x(1)-4.0)+(x(2)-2.0)*(x(2)-2.0));
                                -x(2)-0;
-                                x(3)-deg2rad(20);
-                               -x(3)-deg2rad(20);
-                                u(1)-4.5;
+                                x(3)-deg2rad(30);
+                               -x(3)-deg2rad(30);
+                                u(1)-5.0;
                                -u(1)-0.1;
-                                u(2)-4.5;
+                                u(2)-5.0;
                                -u(2)-0.1]); % <= 0
 
 % TO DO: add final state constraint here
@@ -157,7 +158,8 @@ for m=1:params.N
     constraint_voilation(:,m) = path_constraint_func(xm,um);
 end
 figure(3000);
-plot(t(1:end-1),constraint_voilation,'LineWidth',2.0); hold on;
+plot(t(1:end-1),constraint_voilation(1:3,:),'r','LineWidth',2.0); hold on;
+plot(t(1:end-1),constraint_voilation(4:end,:),'b','LineWidth',1.0); hold on;
 plot(t(1:end-1),0*constraint_voilation,'k-.','LineWidth',2.0);
 grid on;
 %%

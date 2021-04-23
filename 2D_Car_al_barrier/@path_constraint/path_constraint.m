@@ -2,7 +2,7 @@ classdef path_constraint < handle
     %path_CONSTRAINT path_constraint
     
     properties
-        delta = 0.0001,
+        delta = 0.001,
         mu = 100,
         t = 10
     end
@@ -19,7 +19,8 @@ classdef path_constraint < handle
         end
         
         function [] = update_t(obj)
-            obj.t = obj.t + obj.mu;            
+            obj.t = min(obj.t + obj.mu, 1e5);
+            obj.delta  = max(obj.delta / 1.001, 1e-9);        
         end
         
         function Penalty = penalty(obj, x, u)

@@ -28,6 +28,7 @@ classdef rbt_mdl < handle
         function xd = Dynamics(obj, t, x, u)
             qd = x(2,:);
             [M,C,G,F,B] = obj.EoM(x);
+            M = 1.5 * M;
             xd = [qd; 
                   M \ (B*u-C*qd-F*qd-G)];
         end
