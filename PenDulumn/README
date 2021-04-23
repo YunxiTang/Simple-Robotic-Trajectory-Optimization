@@ -1,0 +1,4 @@
+## Mixed ddp-related solver for trajectory optimization
+# DDP Solver
+# Multiple Shooting DDP solver
+# Constrained Multiple Shooting DDP solver (in progress)
