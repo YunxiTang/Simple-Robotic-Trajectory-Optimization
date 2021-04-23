@@ -341,8 +341,9 @@ classdef msddp_solver < handle
                     break
                 end
                 obj.Update_iter();
-                if mod(obj.iter, 5)==0
+                if mod(obj.iter, 1)==0
                     path_constraint.update_t();
+                    final_constraint.update_t();
                 end
             end
             [xsol, usol, Ksol] = obj.assemble_solution(xbar, ubar, K, params);
