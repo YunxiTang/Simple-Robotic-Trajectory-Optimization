@@ -114,13 +114,9 @@ classdef msddp_solver < handle
             xbar = cell(obj.M, 1);
             ubar = cell(obj.M, 1);
             J = 0;
-            if params.warm_start == 1
-                x_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\Planar_Quadrotor_ms_constrained\x_al.mat');
-                u_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\Planar_Quadrotor_ms_constrained\u_al.mat');
-                x_warm = x_al.xbar;
-                u_warm = u_al.ubar;
-                xbar = x_warm;
-                ubar = u_warm;
+            if isfield(params, {'x_warm','u_warm'})
+                xbar = params.x_warm;
+                ubar = params.u_warm;
             else
                 for k = 1:obj.M
                     % make initial guess of intermediate states
@@ -335,12 +331,13 @@ classdef msddp_solver < handle
                 change = Vprev - Vbar;
                 DU = cell2mat(du);
                 DU = reshape(DU,(params.nu*params.shooting_phase*obj.L),1);
-                if (change) < params.stop && obj.iter > 5 || all(DU<1e-5)
+                if (change) < params.stop && obj.iter > 5 || all(DU<1e-3)
                     break
                 end
                 obj.Update_iter();
-                if mod(obj.iter, 5)==0
+                if mod(obj.iter, 1)==0
                     path_constraint.update_t();
+                    final_constraint.update_t();
                 end
             end
             [xsol, usol, Ksol] = obj.assemble_solution(xbar, ubar, K, params);
@@ -348,19 +345,23 @@ classdef msddp_solver < handle
         
         function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
             %%% Assemble the final solution
+            %%% assemble the final solution
+            xsol = zeros(params.nx, params.N+1);
+            usol = zeros(params.nu, params.N);
+            Ksol = zeros(params.nu, params.nx, params.N);
             if 1 < params.shooting_phase
-                xsol = xbar{1}(:,1:(end-1));
-                usol = ubar{1}(:,1:(end-1));
-                Ksol = zeros(params.nu, params.nx, params.N-1);
+                xsol(:,1:obj.L-1) = xbar{1}(:,1:(end-1));
+                usol(:,1:obj.L-1) = ubar{1}(:,1:(end-1)); 
                 Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
                 for k=2:params.shooting_phase                
                     if k < params.shooting_phase
-                        xsol = [xsol xbar{k}(:,1:(end-1))];
+                        xsol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = xbar{k}(:,1:(end-1));
                     end
-                    usol = [usol ubar{k}(:,1:(end-1))];
+                    usol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = ubar{k}(:,1:(end-1));
                     Ksol(:,:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = K{k}(:,:,1:(end-1));
                 end
-                xsol = [xsol xbar{k}];
+                Me = params.shooting_phase;
+                xsol(:,(Me-1)*(obj.L-1)+1:(Me*(obj.L-1)+1)) = xbar{k};
             else
                 xsol = xbar{1};
                 usol = ubar{1}(:,1:(end-1));

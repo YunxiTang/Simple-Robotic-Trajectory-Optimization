@@ -11,26 +11,26 @@ exp_date = 'RLB';
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
 log = 0;
-params.dt           = .01;
-params.T            = 5.0;
-params.N            = params.T / params.dt;
-params.shooting_phase = 50;
-params.x0           = [5.0; 2.5; 0.0; 0.0; 0.0; 0.0];
-params.xf       = [1.0; 1.5; 0.0; 0.0; 0.0; 0.0];
-params.nx       = numel(params.x0);
-params.nu       = 2;
-params.Q        = diag([1 1 1 1 1 1])*1;
-params.R        = diag([0.1 0.1]);
-params.Qf       = diag([5 5 5 5 5 5]);
-params.Rf       = eye(params.nu);
+params.dt               = .01;
+params.T                = 5.0;
+params.N                = params.T / params.dt;
+params.shooting_phase   = 50;
+params.x0               = [5.0; 2.5; 0.2; 0.0; 0.0; 0.0];
+params.xf               = [1.0; 1.5; 0.0; 0.0; 0.0; 0.0];
+params.nx               = numel(params.x0);
+params.nu               = 2;
+params.Q                = diag([1 1 1 1 1 1]);
+params.R                = diag([0.1 0.1]);
+params.Qf               = diag([5 5 5 5 5 5])*10;
+params.Rf               = eye(params.nu);
 params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 5.0;
 params.umin  = 0.1;
-params.Debug = 1;           % 1 -> show details
+params.Debug = 0;           % 1 -> show details
 params.plot = 0;            % 1 -> show plots during optimization
-params.Max_iter = 200;
-params.stop = 1e-5;
-params.qp = 1;
+params.Max_iter = 500;
+params.stop = 1e-4;
+params.qp = 0;
 params.warm_start = 1;
 
 nt = params.T / params.shooting_phase;
@@ -41,6 +41,12 @@ end
 params.t = tax;
 t = 0.0:params.dt:params.T;
 
+if params.warm_start == 1
+   x_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\Planar_Quadrotor_ms_constrained\x_al.mat');
+   u_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\Planar_Quadrotor_ms_constrained\u_al.mat');
+   params.x_warm = x_al.xbar;
+   params.u_warm = u_al.ubar;
+end
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% create robot,constraints & cost mdl %%%%%
@@ -53,11 +59,11 @@ planar_quad = planar_quadrotor();
 % path constraint
 Obstacles = [2.0 3.0 4.0;
              2.0 1.0 2.0;
-             0.6 0.5 0.6];
+             0.4 0.5 0.4];
 
-path_constraint_func = @(x,u)([0.6*0.6 - ((x(1)-2.0)*(x(1)-2.0)+(x(2)-2.0)*(x(2)-2.0));
+path_constraint_func = @(x,u)([0.4*0.4 - ((x(1)-2.0)*(x(1)-2.0)+(x(2)-2.0)*(x(2)-2.0));
                                0.5*0.5 - ((x(1)-3.0)*(x(1)-3.0)+(x(2)-1.0)*(x(2)-1.0));
-                               0.6*0.6 - ((x(1)-4.0)*(x(1)-4.0)+(x(2)-2.0)*(x(2)-2.0));
+                               0.4*0.4 - ((x(1)-4.0)*(x(1)-4.0)+(x(2)-2.0)*(x(2)-2.0));
                                -x(2)-0;
                                 x(3)-deg2rad(30);
                                -x(3)-deg2rad(30);
@@ -99,6 +105,7 @@ telapsed = toc(tstart);
 
 J_hist = solver.Jstore;
 R_hist = solver.Contract_Rate;
+real_cost = compute_cost(xsol,usol,cost,params);
 %% plot
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0,'MarkerSize',3);
@@ -173,16 +180,16 @@ end
 
 %%
 %%%%%%%%% animation %%%%%%%%%
-figure(2000);
-k = 25;
-plot_obstacle(Obstacles-[0 0 0;0 0 0;0.15 0.15 0.15], 2000);
-hold on;
-plot(params.x0(1), params.x0(2), 'bp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;
-plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15); hold on;
-plot(xsol(1,:),xsol(2,:),'r-.','LineWidth',2.0);
-hold off;
-planar_quad.animation(t,xsol,k,2000);
-axis equal;
-h=legend('$Obstacle\;1$','$Obstacle\;2$','$Obstacle\;3$','$Start \; Point$','$Goal\;Point$','$CoM \; Trajectory$', 'Interpreter','latex','FontSize',13);
-h.NumColumns = 2;
-set (gcf,'Position',[400,100,500,500], 'color','w');
+% figure(2000);
+% k = 25;
+% plot_obstacle(Obstacles-[0 0 0;0 0 0;0.15 0.15 0.15], 2000);
+% hold on;
+% plot(params.x0(1), params.x0(2), 'bp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;
+% plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15); hold on;
+% plot(xsol(1,:),xsol(2,:),'r-.','LineWidth',2.0);
+% hold off;
+% planar_quad.animation(t,xsol,k,2000);
+% axis equal;
+% h=legend('$Obstacle\;1$','$Obstacle\;2$','$Obstacle\;3$','$Start \; Point$','$Goal\;Point$','$CoM \; Trajectory$', 'Interpreter','latex','FontSize',13);
+% h.NumColumns = 2;
+% set (gcf,'Position',[400,100,500,500], 'color','w');

@@ -10,6 +10,7 @@ nx = params.nx;
 nu = params.nu;
 u = sym('u',[nu 1]','real');
 x = sym('x',[nx 1]','real');
+noth = sym('noth',1,'real');
 
 xf = params.xf;
 dt = params.dt;
@@ -30,7 +31,7 @@ lf = 1/2*(x-xf).'*Qf*(x-xf);
 lx   = jacobian(l,x)';  lu  = jacobian(l,u)';
 lxx  = jacobian(lx,x);  luu  = jacobian(lu,u);
 lux  = jacobian(lu,x);  lxu  = jacobian(lx,u);
-lfx  = jacobian(lf, x); lfxx = jacobian(lfx,x);
+lfx  = jacobian(lf, x)'; lfxx = jacobian(lfx,x);
 matlabFunction(l, 'vars',{x, u},'file','@cst_mdl/l_cost', 'optimize',1==1);
 matlabFunction(lf,'vars',{x},'file','@cst_mdl/lf_cost','optimize',1==1);
 matlabFunction(l,lx,lu,lxx,lux,lxu,luu, 'vars',{x, u},...
@@ -38,10 +39,10 @@ matlabFunction(l,lx,lu,lxx,lux,lxu,luu, 'vars',{x, u},...
 matlabFunction(lf,lfx,lfxx,'vars',{x},'file','@cst_mdl/lf_info','optimize',1==1);
 
 %%% derive dynamics and compute anylytical derivatives
-% f = rbtmdl.rk(x, u, dt);
-% fx = jacobian(f,x);
-% fu = jacobian(f,u);
-% matlabFunction(fx, fu,'vars',{x, u},'file','@Acrobot/getLinSys', 'optimize',1==0);
-% success = 1;
+f = rbtmdl.Dynamics(0, x, u);
+fx = eye(nx) + jacobian(f,x) * dt;
+fu = jacobian(f,u) * dt;
+matlabFunction(fx, fu,'vars',{x, u, noth},'file','@Acrobot/getLinSys', 'optimize',1==1);
+success = 1;
 end
 

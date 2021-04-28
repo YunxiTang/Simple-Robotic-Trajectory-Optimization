@@ -4,13 +4,15 @@ classdef path_constraint < handle
     properties
         delta = 0.001,
         mu = 100,
-        t = 10
+        t = 10,
+        N_ineq = 0
     end
     
     methods
-        function obj = path_constraint(t, mu, delta)
+        function obj = path_constraint(Nineq, t, mu, delta)
             %CONSTRAINT Construct an instance of this class
             fprintf('[INFO]: Creating Path Constraint for Optimization Problem. \n');
+            obj.N_ineq = Nineq;
             if nargin > 1
                 obj.t = t;
                 obj.mu = mu;
@@ -19,12 +21,13 @@ classdef path_constraint < handle
         end
         
         function [] = update_t(obj)
-            obj.t = obj.t + obj.mu;            
+            obj.t = obj.t + obj.mu;  
+            obj.delta = max(obj.delta / 1.01, 1e-8);
         end
         
         function Penalty = penalty(obj, x, u)
             cons_value = obj.c(x, u);
-            Nc = length(cons_value);
+            Nc = obj.N_ineq;
             pent = zeros(Nc, 1);
             for i=1:Nc
                 if -cons_value(i) > obj.delta

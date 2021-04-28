@@ -2,15 +2,17 @@ classdef final_constraint < handle
     %FINAL_CONSTRAINT final_state_constraint here
     
     properties
-        delta = 0.001,
+        delta = 0.005,
         mu = 100,
-        t = 10
+        t = 10,
+        N_ineq = 0
     end
     
     methods
-        function obj = final_constraint(t, mu, delta)
+        function obj = final_constraint(Nineq, t, mu, delta)
             %FINAL_CONSTRAINT Construct an instance of this class
             fprintf('[INFO]: Creating Final Constraint for Optimization Problem. \n');
+            obj.N_ineq = Nineq;
             if nargin > 1
                 obj.t = t;
                 obj.mu = mu;
@@ -19,12 +21,13 @@ classdef final_constraint < handle
         end
         
         function [] = update_t(obj)
-            obj.t = obj.t + obj.mu;            
+            obj.t = obj.t + obj.mu; 
+            obj.delta = max(obj.delta / 1.1,1e-5);
         end
         
         function Penalty = penalty(obj, x)
             cons_value = obj.final_c(x);
-            Nc = length(cons_value);
+            Nc = obj.N_ineq;
             pent = zeros(Nc, 1);
             for i=1:Nc
                 if -cons_value(i) > obj.delta

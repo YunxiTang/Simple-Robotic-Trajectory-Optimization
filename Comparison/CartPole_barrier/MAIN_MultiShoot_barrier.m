@@ -14,23 +14,23 @@ log = 0;
 params.dt               =  0.01;
 params.T                =  2.0;
 params.N                = params.T / params.dt;
-params.shooting_phase   = 10;
+params.shooting_phase   = 5;
 params.x0               = [0.0;0.0;0.0;0.0];
 params.xf               = [0.0;pi;0.0;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 1;
 params.Q                = diag([1 1 1 1]);
 params.R                = diag([0.1]);
-params.Qf               = diag([5 5 5 5])*5;
+params.Qf               = diag([5 5 5 5]);
 params.Rf               = eye(params.nu);
 params.Reg_Type         = 2;        % 1->reg of Quu  / 2->reg of Vxx
-params.umax             = 30;
-params.umin             = -30;
-params.Debug = 1;           % 1 -> show details
+params.umax             = 25;
+params.umin             = -25;
+params.Debug = 0;           % 1 -> show details
 params.plot = 1;            % 1 -> show plots during optimization
 params.Max_iter = 500;
-params.stop = 1e-7;
-params.qp = 1;
+params.stop = 1e-4;
+params.qp = 0;
 params.warm_start = 1;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
@@ -40,6 +40,12 @@ end
 params.t = tax;
 t = 0.0:params.dt:params.T;
 
+if params.warm_start == 1
+   x_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\Comparison\CartPole_ms_constrained\x_al.mat');
+   u_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\Comparison\CartPole_ms_constrained\u_al.mat');
+   params.x_warm = x_al.xbar;
+   params.u_warm = u_al.ubar;
+end
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% create robot,constraints & cost mdl %%%%%
@@ -52,8 +58,8 @@ cart = CartPole();
 % path constraint
 path_constraint_func = @(x,u)([u(1)-params.umax;
                                params.umin- u(1);
-                               x(2)-2*pi;
-                               -2*pi-x(2);
+                               x(2)-1.5*pi;
+                               -1.5*pi-x(2);
                                x(1)-0.8;
                                -0.8-x(1)]); % <= 0
 Npath_Nineq = numel(path_constraint_func(params.x0, zeros(params.nu,1)));
@@ -62,7 +68,11 @@ final_constraint_func = @(xf)([xf(1)-params.xf(1);
                                params.xf(1)-xf(1);
                                xf(2)-params.xf(2);
                                params.xf(2)-xf(2)]); % < 0
-
+Nfinal_Nineq = numel(final_constraint_func(params.xf));
+% create constraint objects
+path_cons = path_constraint(Npath_Nineq);
+final_cons = final_constraint(Nfinal_Nineq);
+                           
 % cost model
 cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf);
 
@@ -77,10 +87,6 @@ Setup_Functions_barrier(params, cart, cost, path_constraint_func, final_constrai
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 solver = msddp_solver(params);
 
-% create constraint objects
-path_cons = path_constraint();
-final_cons = final_constraint();
-
 %% Solve ................................
 tstart = tic;
 [xsol, usol, Ksol] = solver.Solve(cart,cost,path_cons,final_cons,params);
@@ -89,6 +95,7 @@ telapsed = toc(tstart)
 J_hist = solver.Jstore;
 Jr_hist = solver.J_real;
 R_hist = solver.Contract_Rate;
+real_cost = compute_cost(xsol,usol,cost,params);
 %% plot
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0,'MarkerSize',3);

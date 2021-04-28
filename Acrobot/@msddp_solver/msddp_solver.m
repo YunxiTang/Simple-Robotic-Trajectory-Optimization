@@ -8,7 +8,7 @@ classdef msddp_solver < handle
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.2,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = [],   % store real costs
         Contract_Rate = []
@@ -238,7 +238,7 @@ classdef msddp_solver < handle
             V = 0;
             obj.eps = 1.0;
             alpha = obj.eps;
-            while alpha > 1e-9
+            while alpha > 1e-5
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);

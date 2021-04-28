@@ -12,25 +12,25 @@ exp_date = 'RLB';
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
 log = 0;
 params.dt    = .01;
-params.T     = 8.0;
+params.T     = 5.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 800;
+params.shooting_phase = 100;
 params.x0    = [-0.5;0.0;0.0;0.0];
-params.xf    = [2.0;3.0;pi/2;0.0];
+params.xf    = [2.5;3.0;pi/2;0.0];
 params.nx    = numel(params.x0);
 params.nu    = 2;
 params.Q     = diag([1 1 1 1]);
 params.R     = diag([0.1 0.1]);
-params.Qf    = diag([5 5 5 5]);
+params.Qf    = diag([5 5 5 5])*50;
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 4.5;
 params.umin  = -4.5;
-params.Debug = 1;           % 1 -> show details
+params.Debug = 0;           % 1 -> show details
 params.plot = 0;            % 1 -> show plots during optimization
-params.Max_iter = 200;
-params.stop = 1e-7;
-params.qp = 1;
+params.Max_iter = 500;
+params.stop = 1e-4;
+params.qp = 0;
 params.warm_start = 1;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
@@ -40,6 +40,12 @@ end
 params.t = tax;
 t = 0.0:params.dt:params.T;
 
+if params.warm_start == 1
+    x_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car_ms_constrained\x_al.mat');
+    u_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\2D_Car_ms_constrained\u_al.mat');
+    params.x_warm = x_al.xbar;
+    params.u_warm = u_al.ubar;
+end
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% create robot,constraints & cost mdl %%%%%
@@ -89,10 +95,11 @@ final_cons = final_constraint();
 %% Solve ................................
 tstart = tic;
 [xsol, usol, Ksol] = solver.Solve(car,cost,path_cons,final_cons,params);
-telapsed = toc(tstart);
+telapsed = toc(tstart)
 
 J_hist = solver.Jstore;
 R_hist = solver.Contract_Rate;
+J_r = compute_cost(xsol,usol,cost,params);
 %% plot
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0,'MarkerSize',3);
