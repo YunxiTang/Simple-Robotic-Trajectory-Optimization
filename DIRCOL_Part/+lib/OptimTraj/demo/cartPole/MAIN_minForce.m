@@ -11,16 +11,17 @@ p.g = 9.81;  % (m/s^2) gravity
 p.l = 0.5;   % (m) pendulum (pole) length
 
 dist = 0.0;  %How far must the cart translate during its swing-up
-maxForce = 35;  %Maximum actuator forces
+maxForce = 25;  %Maximum actuator forces
 duration = 3;
-
+problem.options.trapezoid.nGrid = 300;
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %                     Set up function handles                             %
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 
 problem.func.dynamics = @(t,x,u)( cartPoleDynamics(x,u,p) );
-problem.func.pathObj = @(t,x,u)( 0.1*u.^2 + x(1)^2 + (x(2)-pi)^2 + x(3)^2 + x(4)^2);  %Force-squared cost function
-
+problem.func.pathObj = @(t,x,u)( 0.1*u.^2 + x(1)^2 + (x(2)-pi)^2 + x(3)^2 + x(4)^2)/2;  %Force-squared cost function
+problem.func.bndObj = @(t0,x0,tf,xf)((xf(1)^2 + (xf(2)-pi)^2 + xf(3)^2 + xf(4)^2)*5/2 + ...
+                                     (x0(1)^2 + (x0(2)-pi)^2 + x0(3)^2 + x0(4)^2)/2);
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %                     Set up problem bounds                               %
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
@@ -35,8 +36,8 @@ problem.bounds.initialState.upp = zeros(4,1);
 problem.bounds.finalState.low = [dist;pi;0;0];
 problem.bounds.finalState.upp = [dist;pi;0;0];
 
-problem.bounds.state.low = [-0.75;-2*pi;-inf;-inf];
-problem.bounds.state.upp = [0.75;2*pi;inf;inf];
+problem.bounds.state.low = [-0.8;-1.5*pi;-inf;-inf];
+problem.bounds.state.upp = [ 0.8; 1.5*pi; inf; inf];
 
 problem.bounds.control.low = -maxForce;
 problem.bounds.control.upp = maxForce;
@@ -56,15 +57,17 @@ problem.guess.control = [0,0];
 
 problem.options.nlpOpt = optimset(...
     'Display','iter',...
-    'MaxFunEvals',2e5,...
-    'TolFun',1e-3);
-
+    'MaxFunEvals',5e5,...
+    'TolFun',1e-7,...
+    'MaxIter',500,...
+    'Algorithm','sqp');
+% interior-point
 problem.options.method = 'trapezoid';
 % problem.options.method = 'hermiteSimpson';
 % problem.options.method = 'rungeKutta';
 % problem.options.method = 'chebyshev';
 
-problem.options.trapezoid.nGrid = 300;
+
 
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %                            Solve!                                       %

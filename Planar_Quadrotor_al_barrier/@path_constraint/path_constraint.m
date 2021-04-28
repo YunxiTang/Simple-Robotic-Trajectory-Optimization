@@ -2,7 +2,7 @@ classdef path_constraint < handle
     %path_CONSTRAINT path_constraint
     
     properties
-        delta = 0.0001,
+        delta = 0.00001,
         mu = 100,
         t = 10
     end

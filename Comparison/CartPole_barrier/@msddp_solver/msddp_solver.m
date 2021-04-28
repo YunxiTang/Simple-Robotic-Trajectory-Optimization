@@ -4,10 +4,10 @@ classdef msddp_solver < handle
     properties
         M,                  % shooting phase
         L,                  % length of shooting phase
-        Reg = 1e-3,         % how much to regularize
+        Reg = 0.0 ,         % how much to regularize
         Reg_Type = 1,       % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,          % eps: line-search parameter  
-        gamma = 0.1,        % threshold to accept a FW step
+        gamma = 0.5,        % threshold to accept a FW step
         beta = 0.5,         % for line-search backtracking
         iter = 0,           % count iterations
         Jstore = [],        % store full costs
@@ -30,7 +30,7 @@ classdef msddp_solver < handle
         end
         
         function [] = Jreal_pushback(obj, Jr)
-            % store costs
+            % store real costs
             obj.J_real = [obj.J_real Jr];
         end
         
@@ -67,17 +67,9 @@ classdef msddp_solver < handle
             grid on;
             hold off;
             
-            figure(555);
-            title('Defects','Interpreter','latex','FontSize',15);
-            for k=1:nx
-                subplot(nx,1,k);
-                plot(dft(k,:),'s','LineWidth',2.0);
-                grid on;
-            end
-            
         end
         
-        function [J_idx,Jr_idx, xsol,usol] = simulate_phase(obj,rbt,cst,path_constraint,final_constraint,params,idx,x0,xbar,ubar,du,K)
+        function [J_idx,Jr_idx,xsol,usol] = simulate_phase(obj,rbt,cst,path_constraint,final_constraint,params,idx,x0,xbar,ubar,du,K)
             % simulate each inter-phase
             xref = params.xf;
             uref = zeros(params.nu, 1);
@@ -97,6 +89,7 @@ classdef msddp_solver < handle
                 % Sum up costs
                 J_idx = J_idx + cst.l_cost(xi, ui, xref, uref) + path_constraint.penalty(xi, ui)*params.dt;
                 Jr_idx = Jr_idx + cst.l_cost(xi, ui, xref, uref);
+                
                 % Propagate dynamics
                 xi = rbt.rk(xi, ui, params.dt);
                 if isnan(xi)
@@ -109,7 +102,6 @@ classdef msddp_solver < handle
             end
             Jr_idx = Jr_idx + (cst.lf_cost(xsol(:,end)))*(idx==obj.M);
             J_idx = J_idx + (cst.lf_cost(xsol(:,end))+final_constraint.penalty(xsol(:,end)))*(idx==obj.M);
-            
         end
        
         function [J,Jr,xbar,ubar] = Init_Forward(obj,rbt,cst,path_constraint,final_constraint,params)
@@ -118,13 +110,9 @@ classdef msddp_solver < handle
             ubar = cell(obj.M, 1);
             J = 0;
             Jr = 0;
-            if params.warm_start == 1
-                x_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\Comparison\CartPole_ms_constrained\x_al.mat');
-                u_al = load('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\Comparison\CartPole_ms_constrained\u_al.mat');
-                x_warm = x_al.xbar;
-                u_warm = u_al.ubar;
-                xbar = x_warm;
-                ubar = u_warm;
+            if isfield(params, {'x_warm','u_warm'})
+                xbar = params.x_warm;
+                ubar = params.u_warm;
             else
                 for k = 1:obj.M
                     % make initial guess of intermediate states
@@ -244,7 +232,7 @@ classdef msddp_solver < handle
                     
                     % Standard Recursive Equations
                     % add boxQP solver here
-                    if params.qp == 1 && obj.iter > 10
+                    if params.qp == 1 && obj.iter > 5
                         lb = params.umin * ones(params.nu, 1);
                         ub = params.umax * ones(params.nu, 1);
                         lower = lb - u_ij;
@@ -310,7 +298,7 @@ classdef msddp_solver < handle
             obj.J_pushback(V);
             obj.Jreal_pushback(Vr);
             obj.Rate_pushback(ratio);
-            if params.plot == 1 && mod(obj.iter,2) == 0
+            if params.plot == 1 && mod(obj.iter,1) == 0
                obj.solver_Callback(x,u,params);
             end
         end
@@ -333,23 +321,29 @@ classdef msddp_solver < handle
                     obj.Reg = max(obj.Reg * 2, 1e-3);
                 end
                 Vprev = Vbar;
+                Vr_prev = Vr;
                 if params.Debug == 1
                     fprintf('[INFO]: Iteration %3d   ||  Cost %.12e \n',obj.iter,Vbar);
                 end
                 % Set regularization back to 0 for next backward pass
-                obj.Reg = 1e-3;
+                obj.Reg = 0.0;
                 %%% Forward Pass
                 [Vbar,Vr,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,path_constraint,final_constraint,params);
                 
                 [dft] = obj.CalDefect(xbar,params);
-                change = Vprev - Vbar;
+                V_change = Vprev - Vbar;
+                Vr_change = Vr_prev - Vr;
                 DU = cell2mat(du);
                 DU = reshape(DU,(params.nu*params.shooting_phase*obj.L),1);
-                if (change) < params.stop && obj.iter > 5 || all(DU<1e-3)
+                if (V_change < params.stop || abs(Vr_change) < params.stop) && obj.iter > 50 
+                    fprintf('[INFO]: Value Function Converge!');
+                    break
+                elseif all(DU<=0.001) && obj.iter > 50
+                    fprintf('[INFO]: Policy Function Converge!');
                     break
                 end
                 obj.Update_iter();
-                if mod(obj.iter, 3)==0
+                if mod(obj.iter, 1)==0
                     path_constraint.update_t();
                     final_constraint.update_t();
                 end
@@ -359,19 +353,23 @@ classdef msddp_solver < handle
         
         function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
             %%% Assemble the final solution
+            %%% assemble the final solution
+            xsol = zeros(params.nx, params.N+1);
+            usol = zeros(params.nu, params.N);
+            Ksol = zeros(params.nu, params.nx, params.N);
             if 1 < params.shooting_phase
-                xsol = xbar{1}(:,1:(end-1));
-                usol = ubar{1}(:,1:(end-1));
-                Ksol = zeros(params.nu, params.nx, params.N-1);
+                xsol(:,1:obj.L-1) = xbar{1}(:,1:(end-1));
+                usol(:,1:obj.L-1) = ubar{1}(:,1:(end-1)); 
                 Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
                 for k=2:params.shooting_phase                
                     if k < params.shooting_phase
-                        xsol = [xsol xbar{k}(:,1:(end-1))];
+                        xsol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = xbar{k}(:,1:(end-1));
                     end
-                    usol = [usol ubar{k}(:,1:(end-1))];
+                    usol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = ubar{k}(:,1:(end-1));
                     Ksol(:,:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = K{k}(:,:,1:(end-1));
                 end
-                xsol = [xsol xbar{k}];
+                Me = params.shooting_phase;
+                xsol(:,(Me-1)*(obj.L-1)+1:(Me*(obj.L-1)+1)) = xbar{k};
             else
                 xsol = xbar{1};
                 usol = ubar{1}(:,1:(end-1));

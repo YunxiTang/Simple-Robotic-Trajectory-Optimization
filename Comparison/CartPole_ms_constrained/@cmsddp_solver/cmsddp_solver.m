@@ -8,7 +8,7 @@ classdef cmsddp_solver < handle
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.1,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = []    % store real costs
         u_perturb = [],% constrol noise
@@ -16,8 +16,8 @@ classdef cmsddp_solver < handle
         Mu         ,   % penalty multipliers. (path constraint)
         Lambda_f,      % dual variabels.      (final constraint)
         Mu_f,          % penalty multipliers. (final constraint)
-        phi = 50,      % penalty scaling parameter (path constraint) 
-        phi_f = 1.01,    % penalty scaling parameter (final constraint)
+        phi = 2.0,      % penalty scaling parameter (path constraint) 
+        phi_f = 0.0,    % penalty scaling parameter (final constraint)
         Path_Constraint,    % path constraints
         Final_Constraint,   % final constraints
         ctrst_vil
@@ -39,7 +39,7 @@ classdef cmsddp_solver < handle
                 obj.Mu{k} = 50 * ones(path_constraint.n_ineq, obj.L-1);
                 obj.Lambda{k} = zeros(path_constraint.n_ineq, obj.L-1);
             end
-            obj.Mu_f = 10 * ones(final_constraint.n_ineq, 1);
+            obj.Mu_f = 50 * ones(final_constraint.n_ineq, 1);
             obj.Lambda_f = zeros(final_constraint.n_ineq, 1);
         end
         
@@ -377,7 +377,7 @@ classdef cmsddp_solver < handle
                 
                 %%% 
                 % stop condition 1:
-                if Failed == 1
+                if Failed == 1  && obj.iter > 5
                     fprintf('[INFO]: Exit with Bactracking Line Search Failed.\n');
                     [xsol, usol, Ksol, Lambdasol] = obj.assemble_solution(xbar, ubar, K, params);
                     return
@@ -385,7 +385,7 @@ classdef cmsddp_solver < handle
                 
                 % stop condition 2:
                 change = Vprev - Vbar;
-                if (change) < params.stop  && obj.iter > 50
+                if abs(change) < params.stop  && obj.iter > 5
                     [xsol, usol, Ksol, Lambdasol] = obj.assemble_solution(xbar, ubar, K, params);
                     fprintf('[INFO]: Exit with Convergence.\n');
                     return

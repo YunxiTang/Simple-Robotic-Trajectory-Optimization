@@ -15,19 +15,19 @@ log = 0;
 params.dt               =  .01;
 params.T                =  2.0;
 params.N                = params.T / params.dt;
-params.shooting_phase   = 50;
+params.shooting_phase   = 5;
 params.x0               = [0.0;0.0;0.0;0.0];
 params.xf               = [0.0;pi;0.0;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 1;
 params.Q                = diag([1 1 1 1]);
 params.R                = diag([0.1]);
-params.Qf               = diag([5 5 5 5])*5;
+params.Qf               = diag([5 5 5 5]);
 params.Rf               = eye(params.nu);
 params.Reg_Type         = 2;     % 1->reg of Quu  / 2->reg of Vxx
-params.umax             = 35;
-params.umin             = -35;
-params.Debug            = 1;     % 1 -> show details
+params.umax             = 25;
+params.umin             = -25;
+params.Debug            = 0;     % 1 -> show details
 params.plot             = 1;     % 1 -> show plots during optimization
 params.Max_iter         = 500;
 params.stop             = 1e-3;
@@ -47,8 +47,8 @@ params.MapNo = 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 path_const_func = @(x,u)([u(1)-params.umax ;
                           params.umin - u(1);
-                          x(2)-2*pi;
-                          -2*pi-x(2);
+                          x(2)-1.5*pi;
+                          -1.5*pi-x(2);
                           x(1)-0.8;
                           -0.8-x(1)]);
 Npath_ineq = numel(path_const_func(zeros(params.nx),zeros(params.nu)));
@@ -57,8 +57,8 @@ path_cons = path_constraint(path_const_func, Npath_ineq, params.dt);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%    Add Final Constraints    %%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
-final_const_func = @(x  )([x(1)-params.xf(1)-0.001;
-                            0.001+params.xf(1)-x(1);
+final_const_func = @(x  )([x(1)-params.xf(1);
+                           params.xf(1)-x(1);
                            ]);
 Nfinal_ineq = numel(final_const_func(zeros(params.nx)));
 final_cons = final_constraint(final_const_func,Nfinal_ineq);
@@ -151,3 +151,5 @@ filename_x = '.\x_al';
 save(filename_x,'xbar');
 filename_u = '.\u_al';
 save(filename_u,'ubar');
+
+real_cost = compute_cost(xsol,usol,cost,params);

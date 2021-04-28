@@ -14,7 +14,7 @@ classdef cmsddp_solver < handle
         u_perturb = [],% constrol noise
         Lambda     ,   % dual variabels.      
         Mu         ,   % penalty multipliers. 
-        phi = 5,       % penalty scaling parameter
+        phi = 2,       % penalty scaling parameter
         Constraint,     % constraints
         ctrst_vil
     end
