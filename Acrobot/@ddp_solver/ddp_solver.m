@@ -62,9 +62,9 @@ classdef ddp_solver < handle
                 % Option 1: PD Control
 %                 ui = -[15 5] * (xi - params.xf);
                 % Option 2: Zero Control
-%                 ui = zeros(params.nu,1);
+                ui = zeros(params.nu,1);
                 % Option 3: Random Control
-                ui = 0.5 *randn(params.nu,1);
+%                 ui = 0.5 *randn(params.nu,1);
                 ubar(:,i) = ui;
                 xi = rbt.rk(xi,ui,params.dt);
                 xbar(:,i+1) = xi;
