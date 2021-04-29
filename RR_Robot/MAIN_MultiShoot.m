@@ -11,7 +11,7 @@ exp_date = date;
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
-params.dt    = .1;
+params.dt    = .01;
 params.T     = 2.0;
 params.N     = params.T / params.dt;
 params.shooting_phase = 1;
@@ -23,9 +23,9 @@ params.Q     = diag([0.1 0.1 0.1 0.1])*10;
 params.R     = 1* eye(params.nu);
 params.Qf    = diag([0.1 0.1 0.1 0.1])*1200;
 params.Rf    = eye(params.nu);
-params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 10;
-params.umin  = -10;
+params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
+params.umax  = 7;
+params.umin  = -7;
 params.Debug = 1;     % 1 -> show details
 params.plot = 1;      % 1 -> show plots during optimization
 params.Max_iter = 2000;

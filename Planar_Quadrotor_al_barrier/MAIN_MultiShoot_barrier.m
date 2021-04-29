@@ -68,9 +68,9 @@ path_constraint_func = @(x,u)([0.4*0.4 - ((x(1)-2.0)*(x(1)-2.0)+(x(2)-2.0)*(x(2)
                                 x(3)-deg2rad(30);
                                -x(3)-deg2rad(30);
                                 u(1)-5.0;
-                               -u(1)-0.1;
+                                0.1 - u(1);
                                 u(2)-5.0;
-                               -u(2)-0.1]); % <= 0
+                                0.1 - u(2)]); % <= 0
 
 % TO DO: add final state constraint here
 final_constraint_func = @(xf)([xf(1)-params.xf(1);
@@ -180,16 +180,16 @@ end
 
 %%
 %%%%%%%%% animation %%%%%%%%%
-% figure(2000);
-% k = 25;
-% plot_obstacle(Obstacles-[0 0 0;0 0 0;0.15 0.15 0.15], 2000);
-% hold on;
-% plot(params.x0(1), params.x0(2), 'bp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;
-% plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15); hold on;
-% plot(xsol(1,:),xsol(2,:),'r-.','LineWidth',2.0);
-% hold off;
-% planar_quad.animation(t,xsol,k,2000);
-% axis equal;
-% h=legend('$Obstacle\;1$','$Obstacle\;2$','$Obstacle\;3$','$Start \; Point$','$Goal\;Point$','$CoM \; Trajectory$', 'Interpreter','latex','FontSize',13);
-% h.NumColumns = 2;
-% set (gcf,'Position',[400,100,500,500], 'color','w');
+figure(2000);
+k = 25;
+plot_obstacle(Obstacles-[0 0 0;0 0 0;0.15 0.15 0.15], 2000);
+hold on;
+plot(params.x0(1), params.x0(2), 'bp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;
+plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15); hold on;
+plot(xsol(1,:),xsol(2,:),'r-.','LineWidth',2.0);
+hold off;
+planar_quad.animation(t,xsol,k,2000);
+axis equal;
+h=legend('$Obstacle\;1$','$Obstacle\;2$','$Obstacle\;3$','$Start \; Point$','$Goal\;Point$','$CoM \; Trajectory$', 'Interpreter','latex','FontSize',13);
+h.NumColumns = 2;
+set (gcf,'Position',[400,100,500,500], 'color','w');

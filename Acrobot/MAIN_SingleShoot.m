@@ -5,8 +5,8 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-params.dt    = .05;
-params.T     = 10;
+params.dt    = .01;
+params.T     = 5;
 params.N     = params.T / params.dt;
 params.x0    = [0.0; 0.0; 0.0; 0.0];
 params.xf    = [3.14; 0.0; 0.0; 0.0];

@@ -39,10 +39,10 @@ matlabFunction(l,lx,lu,lxx,lux,lxu,luu, 'vars',{x, u},...
 matlabFunction(lf,lfx,lfxx,'vars',{x},'file','@cst_mdl/lf_info','optimize',1==1);
 
 %%% derive dynamics and compute anylytical derivatives
-f = rbtmdl.Dynamics(0, x, u);
-fx = eye(nx) + jacobian(f,x) * dt;
-fu = jacobian(f,u) * dt;
-matlabFunction(fx, fu,'vars',{x, u, noth},'file','@Acrobot/getLinSys', 'optimize',1==1);
+% f = rbtmdl.Dynamics(0, x, u);
+% fx = eye(nx) + jacobian(f,x) * dt;
+% fu = jacobian(f,u) * dt;
+% matlabFunction(fx, fu,'vars',{x, u, noth},'file','@Acrobot/getLinSys', 'optimize',1==1);
 success = 1;
 end
 
