@@ -13,7 +13,7 @@ exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
 params.dt               =  .01;
-params.T                =  5.0;
+params.T                =  3.0;
 params.N                = params.T / params.dt;
 params.shooting_phase   = 100;
 params.x0               = [-0.5;0.0;0.0;0.0];

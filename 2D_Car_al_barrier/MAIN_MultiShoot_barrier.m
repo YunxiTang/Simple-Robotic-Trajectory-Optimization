@@ -12,7 +12,7 @@ exp_date = 'RLB';
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
 log = 0;
 params.dt    = .01;
-params.T     = 5.0;
+params.T     = 3.0;
 params.N     = params.T / params.dt;
 params.shooting_phase = 100;
 params.x0    = [-0.5;0.0;0.0;0.0];
@@ -27,7 +27,7 @@ params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 4.5;
 params.umin  = -4.5;
 params.Debug = 0;           % 1 -> show details
-params.plot = 1;            % 1 -> show plots during optimization
+params.plot = 0;            % 1 -> show plots during optimization
 params.Max_iter = 500;
 params.stop = 1e-4;
 params.qp = 0;

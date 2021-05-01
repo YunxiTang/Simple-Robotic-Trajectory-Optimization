@@ -12,7 +12,7 @@ exp_date = 'RLB';
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
 log = 0;
 params.dt               =  0.01;
-params.T                =  2.0;
+params.T                =  3.0;
 params.N                = params.T / params.dt;
 params.shooting_phase   = 5;
 params.x0               = [0.0;0.0;0.0;0.0];
@@ -31,7 +31,7 @@ params.plot = 1;            % 1 -> show plots during optimization
 params.Max_iter = 500;
 params.stop = 1e-4;
 params.qp = 0;
-params.warm_start = 1;
+params.warm_start = 0;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase

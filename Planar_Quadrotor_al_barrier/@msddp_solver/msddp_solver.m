@@ -75,8 +75,11 @@ classdef msddp_solver < handle
         
         function [J_idx,xsol,usol] = simulate_phase(obj,rbt,cst,path_constraint,final_constraint,params,idx,x0,xbar,ubar,du,K)
             % simulate each inter-phase
+            % xref: if tracking, xref=x(k), else, xref = xf
+            % uref: if tracking, uref=u(k), else, uref = 0
             xref = params.xf;
             uref = zeros(params.nu, 1);
+            
             alpha = obj.eps;
             xsol = 0 * xbar;
             usol = 0 * ubar;

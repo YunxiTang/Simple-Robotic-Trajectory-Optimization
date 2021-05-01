@@ -13,7 +13,7 @@ exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
 params.dt               =  .01;
-params.T                =  2.0;
+params.T                =  3.0;
 params.N                = params.T / params.dt;
 params.shooting_phase   = 5;
 params.x0               = [0.0;0.0;0.0;0.0];
@@ -22,7 +22,7 @@ params.nx               = numel(params.x0);
 params.nu               = 1;
 params.Q                = diag([1 1 1 1]);
 params.R                = diag([0.1]);
-params.Qf               = diag([5 5 5 5]);
+params.Qf               = diag([5 5 5 5])*10;
 params.Rf               = eye(params.nu);
 params.Reg_Type         = 2;     % 1->reg of Quu  / 2->reg of Vxx
 params.umax             = 25;
