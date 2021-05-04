@@ -7,9 +7,9 @@ clearvars params
 % catch
 %     fprintf('\ncould not load params, using default.\n');
     params.sw_target = 0.15166;
-    params.kp_t = 500; 
+    params.kp_t = 1000; 
     params.kd_t = 20;
-    params.kp_s = 900; 
+    params.kp_s = 1000; 
     params.kd_s = 30;
     params.alfa = 16.29; 
     params.t_target = 0.14;

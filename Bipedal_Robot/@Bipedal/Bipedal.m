@@ -3,12 +3,15 @@ classdef Bipedal < handle
     
     properties
         Name = 'Bipedal',
-        l = 0.5,      % torso length
-        r = 1.0,      % leg length
-        M_T = 10,     % torso mass
-        M_H = 15,     % hip mass
-        m = 5,        % leg mass
-        g = 9.81      % gravity
+        m1 = 7;
+        m2 = 7;
+        m3 = 15;
+
+        l1 = 0.5;
+        l2 = 0.5;
+        l3 = 0.35;
+
+        g = 9.81;
     end
     
     methods
@@ -17,48 +20,67 @@ classdef Bipedal < handle
             fprintf('[INFO]: Creating A Three-link Bipedal Robot.');
         end
         
+        function [M, C, G, B] = EoM(obj, x)
+            q1 = x(1);
+            q2 = x(2);
+            q3 = x(3);
+            dq1 = x(4);
+            dq2 = x(5);
+            dq3 = x(6);
+
+            M = eval_M_tmp(obj.l1,obj.l2,obj.l3,obj.m1,obj.m2,obj.m3,q1,q2,q3);
+            C = eval_C_tmp(dq1,dq2,dq3,obj.l1,obj.l2,obj.l3,obj.m2,obj.m3,q1,q2,q3);
+            G = eval_G_tmp(obj.g,obj.l1,obj.l2,obj.l3,obj.m1,obj.m2,obj.m3,q1,q2,q3);
+            B = eval_B_tmp();
+        end
+        
         function xd = Dynamics(obj, t, x, u)
             %METHOD1 Dynamics
             % From "Feedback Control of Dynamic Bipedal Robot Locomotion"
-            theta_1 = x(1);
-            theta_2 = x(2);
-            theta_3 = x(3);
-            dtheta_1 = x(4);
-            dtheta_2 = x(5);
-            dtheta_3 = x(6);
-            theta = [theta_1;theta_2;theta_3];
-            dtheta = [dtheta_1;dtheta_2;dtheta_3];
-            q = [1 0 -1;
-                 0 1 -1;
-                 0 0  1] * theta + [pi;pi;0];
-            qd = [1 0 -1;
-                  0 1 -1;
-                  0 0  1] * dtheta;
-            qd1 = qd(1);
-            qd2 = qd(2);
-            qd3 = qd(3);
-            
-            
-            M(1,1) = (5 * obj.m / 4 + obj.M_H + obj.M_T) * obj.r * obj.r;
-            M(1,2) = -0.5 * obj.m * obj.r * obj.r * cos(theta_1 - theta_2);
-            M(1,3) = obj.M_T * obj.r * obj.l * cos(theta_1 - theta_3);
-            M(2,1) = M(1,2);
-            M(2,2) = 0.25 * obj.m * obj.r * obj.r;
-            M(2,3) = 0;
-            M(3,1) = M(1,3);
-            M(3,2) = M(2,3);
-            M(3,3) = obj.M_T * obj.l * obj.l;
-            
-            C(1,1) = 0.0;
-            C(1,2) = -0.5 * obj.m * obj.r * obj.r * sin(theta_1 - theta_2) * qd2;
-            C(1,3) = obj.M_T * obj.r * obj.l * sin(theta_1 - theta_3) * qd3;
-            C(2,1) = 0.5 * obj.m * obj.r * obj.r * sin(theta_1 - theta_2) * qd1;
-            C(2,2) = 0.0;
-            C(2,3) = 0.0;
-            C(3,1) = -obj.M_T * obj.r * obj.l * sin(theta_1 - theta_3) * qd1;
-            C(3,2) = 0.0;
-            C(3,3) = 0.0;
+            [M, C, G, B] = obj.EoM(x);
+            dq = [x(4); x(5); x(6)];
+            xd = zeros(6, 1);
+            xd(1) = x(4);
+            xd(2) = x(5);
+            xd(3) = x(6);
+            xd(4:6) = M \ (-C*dq - G + B*u);
         end
+        
+        function x_next = rk(obj, x, u, dt)
+           k1 = obj.Dynamics(0, x,             u);
+           k2 = obj.Dynamics(0, x + 0.5*dt*k1, u);
+           k3 = obj.Dynamics(0, x + 0.5*dt*k2, u);
+           k4 = obj.Dynamics(0, x +     dt*k3, u);
+           x_next = x + dt/6*(k1+2*k2+2*k3+k4);
+        end
+        
+        function [fx,fu] = getLinSys(obj,qbar,ubar,dt)
+            dh = 1e-4;
+            Nx = numel(qbar);
+            Nu = numel(ubar);
+            Jx = zeros(Nx,Nx);
+            Ju = zeros(Nx,Nu);
+            Hx = eye(Nx) * dh;
+            Hu = eye(Nu) * dh;
+            for i=1:Nx
+                Jx(:,i) = (obj.rk(qbar + Hx(:,i), ubar, dt) - obj.rk(qbar - Hx(:,i), ubar, dt)) / (2*dh);
+            end
+
+            for i=1:Nu
+                Ju(:,i) = (obj.rk(qbar, ubar+ Hu(:,i), dt) - obj.rk(qbar , ubar - Hu(:,i), dt)) / (2*dh);
+            end
+            fx = Jx;
+            fu = Ju;
+        end
+        
+    end
+    methods (Static)
+        M = eval_M_tmp(l1,l2,l3,m1,m2,m3,q1,q2,q3);
+        C = eval_C_tmp(dq1,dq2,dq3,l1,l2,l3,m2,m3,q1,q2,q3);
+        G = eval_G_tmp(g,l1,l2,l3,m1,m2,m3,q1,q2,q3);
+        B = eval_B_tmp();
+        T = eval_T_tmp(dq1,dq2,dq3,l1,l2,l3,m1,m2,m3,q1,q2,q3);
+        V = eval_V_tmp(dq1,dq2,dq3,g,l1,l2,l3,m1,m2,m3,q1,q2,q3);
     end
 end
 
