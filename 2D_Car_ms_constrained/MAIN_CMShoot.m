@@ -13,27 +13,24 @@ exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
 params.dt               =  .01;
-params.T                =  10.0;
+params.T                =  3.0;
 params.N                = params.T / params.dt;
-params.shooting_phase   = 500;
-params.x0               = [0.0;0.0;0.0;0.0];
-params.xf               = [3.0;3.0;0.0;0.0];
+params.shooting_phase   = 100;
+params.x0               = [-0.5;0.0;0.0;0.0];
+params.xf               = [2.5;3.0;pi/2;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 2;
-% params.Q                = diag([0.1 0.1 0.1 0.1]);
-% params.R                = diag([0.1 0.1]);
-% params.Qf               = diag([50 50 50 50])*50;
-params.Q     = diag([1 1 1 1]);
-params.R     = diag([0.1 0.1]);
-params.Qf    = diag([10 10 5 5]);
+params.Q                = diag([1 1 1 1]);
+params.R                = diag([0.1 0.1]);
+params.Qf               = diag([5 5 5 5])*50;
 params.Rf               = eye(params.nu);
 params.Reg_Type         = 2;     % 1->reg of Quu  / 2->reg of Vxx
 params.umax             = 4.5;
 params.umin             = -4.5;
-params.Debug            = 1;     % 1 -> show details
-params.plot             = 1;     % 1 -> show plots during optimization
+params.Debug            = 0;     % 1 -> show details
+params.plot             = 0;     % 1 -> show plots during optimization
 params.Max_iter         = 1000;
-params.stop             = 1e-9;
+params.stop             = 1e-3;
 params.qp               = 0;
 params.clamp            = 1;
 nt                      = params.T / params.shooting_phase;
@@ -60,12 +57,10 @@ params.MapNo = 1;
 % Obstacles = [0.6 0.5 2.0 3.0;
 %              0.4 1.0 2.0 2.4;
 %              0.1 0.3 0.5 0.2];
-% Obstacles = [1.3 2.0;
-%              1.3 2.5;
-%              0.42 0.2];
+
 Obstacles = [0.0 1.3 2.0;
              1.0 1.3 2.5;
-             0.5 0.6 0.5];
+             0.5 0.6 0.4];
 
 Constraints = constraint(Obstacles, params.dt);
 
@@ -97,7 +92,7 @@ set(ha,'yscale','log');
 set(ha,'xscale','log');
 grid on;
 J_hist = solver.Jstore;
-
+J_r = compute_cost(xsol,usol,cost);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%%  plot data   %%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -135,6 +130,13 @@ plot(t(1:end-1), usol,'LineWidth',2.0);
 legend("$u_{\theta}$","$u_v$",'Interpreter','latex','FontSize',12);
 grid on;
 
+%%%
+figure(2000);
+Constraints.plot_obstacle(2000);hold on;
+plot(params.x0(1), params.x0(2), 'kp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;
+plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15); hold on;
+h = plot(xsol(1,:),xsol(2,:),'r-.','LineWidth',2.0);
+grid on;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%%% data logging %%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%

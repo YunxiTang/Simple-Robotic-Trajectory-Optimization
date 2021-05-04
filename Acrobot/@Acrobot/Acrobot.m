@@ -96,8 +96,8 @@ classdef Acrobot < handle
             fu = Ju;
         end
     end
-%     methods (Static)
-%         [fx,fu] = getLinSys(in1,in2);
-%     end
+    methods (Static)
+%         [fx,fu] = getLinSys(in1,in2,dt);
+    end
 end
 

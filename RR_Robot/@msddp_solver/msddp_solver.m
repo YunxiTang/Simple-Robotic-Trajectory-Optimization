@@ -110,18 +110,21 @@ classdef msddp_solver < handle
             % init forward simulation
             xbar = cell(obj.M, 1);
             ubar = cell(obj.M, 1);
+            du = cell(obj.M, 1);
+            K = cell(obj.M, 1);
             J = 0;
             for k = 1:obj.M
                 % make initial guess of intermediate states
-                xbar{k} = kron(zeros(1, obj.L), params.xf);
+                xbar{k} = kron(ones(1, obj.L), params.xf);
                 ubar{k} = zeros(params.nu, obj.L);
+                du{k} = zeros(params.nu, obj.L);
+                K{k}  = -100*ones(params.nu, params.nx, obj.L);
                 xbar{k}(:,1) = params.x0 + (k-1) * (params.xf - params.x0) ./ obj.M;
             end
-            du = zeros(params.nu, obj.L);
-            K  = zeros(params.nu, params.nx, obj.L);
+            
             for i=1:obj.M
                 x0 = xbar{i}(:,1);
-                [J_idx,xbar{i},ubar{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du,K);
+                [J_idx,xbar{i},ubar{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
             end
             obj.J_pushback(J);

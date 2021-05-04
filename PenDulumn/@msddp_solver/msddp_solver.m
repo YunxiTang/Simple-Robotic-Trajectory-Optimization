@@ -67,9 +67,9 @@ classdef msddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)+0/(1.5*obj.iter+1)*rand(1)) + K(:,:,i)*dxi;
-                lb = params.umin * ones(params.nu, 1);
-                ub = params.umax * ones(params.nu, 1);
-                ui = max(lb, min(ub, ui));
+%                 lb = params.umin * ones(params.nu, 1);
+%                 ub = params.umax * ones(params.nu, 1);
+%                 ui = max(lb, min(ub, ui));
                 usol(:,i) = ui;
                 % Sum up costs
                 J_idx = J_idx + cst.l_cost(xi, ui);
@@ -84,18 +84,21 @@ classdef msddp_solver < handle
             % init forward simulation
             xbar = cell(obj.M, 1);
             ubar = cell(obj.M, 1);
+            K    = cell(obj.M, 1);
+            du   = cell(obj.M, 1);
             J = 0;
             for k = 1:obj.M
                 % make initial guess of intermediate states
-                xbar{k} = zeros(params.nx, obj.L);
+                xbar{k} = kron(ones(1,obj.L), params.xf);
                 ubar{k} = zeros(params.nu, obj.L);
                 xbar{k}(:,1) = params.x0 + (k-1) * (params.xf - params.x0) / obj.M;
+                K{k}  = -1*ones(params.nu, params.nx, obj.L);
+                du{k} = zeros(params.nu, obj.L);
             end
-            du = zeros(params.nu, obj.L);
-            K  = zeros(params.nu, params.nx, obj.L);
+            
             for i=1:obj.M
                 x0 = xbar{i}(:,1);
-                [J_idx,xbar{i},ubar{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du,K);
+                [J_idx,xbar{i},ubar{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
             end
             obj.J_pushback(J);
@@ -128,12 +131,6 @@ classdef msddp_solver < handle
                     x0 = xbar{i}(:,1);
                 else
                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
-                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-                    [fx_n, fu_n] = rbt.getLinSys(xbar{i}(:,1),ubar{i}(:,1));
-                    fx = (fx_pre * 2) / 2;
-                    fu = (fu_pre * 2) / 2;
-                    tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps*du{i-1}(:,end);
-%                     x0 = xbar{i}(:,1) + 1.0*(tilda + dft(:,i-1));
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -202,7 +199,6 @@ classdef msddp_solver < handle
                     alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-%                     dV = dV + 1/2*kff'*Quu*kff + kff'*Qu;
                     dV = alpha * delta1 + 1/2*alpha^2*delta2;
                 end
             end
@@ -241,7 +237,7 @@ classdef msddp_solver < handle
             end
         end
         
-        function [xbar,ubar,du,K,dft] = Solve(obj,rbt,cst,params)
+        function [xbar,ubar,du,K,dft,xsol, usol, Ksol] = Solve(obj,rbt,cst,params)
             % solve OCP
             % init rolling out
             [~,xbar,ubar] = obj.Init_Forward(rbt,cst,params);
@@ -252,12 +248,12 @@ classdef msddp_solver < handle
             end
             [dft] = obj.CalDefect(xbar,params);
 
-            [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);
+            [~,~,~,du,K,~] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);
             
             %%% run a forward iteration
             if params.shooting_phase > 1
                 % avoid closing gap at first iteration
-                obj.eps = 0.9;
+                obj.eps = 0.8;
             end
             [Vbar,xbar,ubar] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
             obj.Update_iter();
@@ -283,22 +279,26 @@ classdef msddp_solver < handle
                     break
                 end
             end
+            [xsol, usol, Ksol] = obj.assemble_solution( xbar, ubar, K, params);
         end
         function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
             %%% assemble the final solution
+            xsol = zeros(params.nx, params.N+1);
+            usol = zeros(params.nu, params.N);
+            Ksol = zeros(params.nu, params.nx, params.N);
             if 1 < params.shooting_phase
-                xsol = xbar{1}(:,1:(end-1));
-                usol = ubar{1}(:,1:(end-1));
-                Ksol = zeros(params.nu, params.nx, params.N-1);
+                xsol(:,1:obj.L-1) = xbar{1}(:,1:(end-1));
+                usol(:,1:obj.L-1) = ubar{1}(:,1:(end-1)); 
                 Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
                 for k=2:params.shooting_phase                
                     if k < params.shooting_phase
-                        xsol = [xsol xbar{k}(:,1:(end-1))];
+                        xsol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = xbar{k}(:,1:(end-1));
                     end
-                    usol = [usol ubar{k}(:,1:(end-1))];
+                    usol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = ubar{k}(:,1:(end-1));
                     Ksol(:,:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = K{k}(:,:,1:(end-1));
                 end
-                xsol = [xsol xbar{k}];
+                Me = params.shooting_phase;
+                xsol(:,(Me-1)*(obj.L-1)+1:(Me*(obj.L-1)+1)) = xbar{k};
             else
                 xsol = xbar{1};
                 usol = ubar{1}(:,1:(end-1));

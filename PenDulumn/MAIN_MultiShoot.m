@@ -6,11 +6,11 @@ clear;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-log = 0;
-params.dt    = .02;
-params.T     = 10.0;
+log = 1;
+params.dt    = .01;
+params.T     = 5.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 1;
+params.shooting_phase = 5;
 params.x0    = [0.0;0.0];
 params.xf    = [3.14;0.0];
 params.nx    = numel(params.x0);
@@ -22,9 +22,9 @@ params.Rf    = eye(params.nu);
 params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 3.5;
 params.umin  = -3.5;
-params.Debug = 1;     % 1 -> show details
-params.plot = 1;      % 1 -> show plots during optimization
-params.Max_iter = 500;
+params.Debug = 0;     % 1 -> show details
+params.plot = 0;      % 1 -> show plots during optimization
+params.Max_iter = 1000;
 params.stop = 1e-9;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
@@ -50,17 +50,24 @@ Setup_Functions(params, pendulum, cost);
 solver = msddp_solver(params);
 
 tstart = tic;
-[xbar,ubar,du,K,dft] = solver.Solve(pendulum,cost,params);
+[xbar,ubar,du,K,dft, xsol, usol, Ksol] = solver.Solve(pendulum,cost,params);
 telapsed = toc(tstart)
 
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0);
 J_hist = solver.Jstore;
 if log == 1
-    file_name1 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\MIXSOL\data\msddp\T',num2str(params.shooting_phase));
-    file_name2 = strcat('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\MIXSOL\data\msddp\M',num2str(params.shooting_phase));
+    file_name1 = strcat('.\data\pd_msddp\T',num2str(params.shooting_phase));
+    file_name2 = strcat('.\data\pd_msddp\M',num2str(params.shooting_phase));
     save(file_name1,'telapsed');
     save(file_name2,'J_hist');
+end
+
+if log == 2
+    file_name3 = strcat('.\model_sensitve_analysis\usol',num2str(params.shooting_phase));
+    file_name4 = strcat('.\model_sensitve_analysis\xsol',num2str(params.shooting_phase));
+    save(file_name3,'usol');
+    save(file_name4,'xsol');
 end
 
 for k=1:params.shooting_phase

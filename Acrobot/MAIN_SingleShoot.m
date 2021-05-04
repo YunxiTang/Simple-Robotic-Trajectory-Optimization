@@ -5,8 +5,8 @@ clc;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
-params.dt    = .05;
-params.T     = 10;
+params.dt    = .01;
+params.T     = 5;
 params.N     = params.T / params.dt;
 params.x0    = [0.0; 0.0; 0.0; 0.0];
 params.xf    = [3.14; 0.0; 0.0; 0.0];
@@ -16,7 +16,7 @@ params.Q     = diag([0.1 0.1 0.1 0.1])*10;
 params.R     =  0.1;
 params.Qf    =  diag([0.1 0.1 0.1 0.1])*1200;
 params.Rf    = eye(params.nu);
-params.Reg_Type = 1;  % 1->reg of Quu  / 2->reg of Vxx
+params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 20.0;
 params.umin  = -20.0;
 params.Debug = 1;     % 1 -> show details
