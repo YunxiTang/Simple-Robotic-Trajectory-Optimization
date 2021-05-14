@@ -210,9 +210,9 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Qcs_info(rbt,cst,x_ij,u_ij,xref,uref,Vx_ij,Vxx_ij,params,path_constraint);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qcs_info(rbt,cst,x_ij,u_ij,xref,uref,Vx_ij,Vxx_ij,params,path_constraint);
                     % regularization
-                    Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                    Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
                     [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                     if FLAG > 0 
@@ -232,10 +232,10 @@ classdef msddp_solver < handle
                         ub = params.umax * ones(params.nu, 1);
                         lower = lb - u_ij;
                         upper = ub - u_ij;
-                        [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                        [kff,~,R,free] = boxQP(Quu_reg, Qu, lower, upper);
                         kfb = zeros(params.nu, params.nx);
                         if any(free)
-                            Lfree = -R\(R'\Qux(free,:));
+                            Lfree = -R\(R'\Qux_hat(free,:));
                             kfb(free,:) = Lfree;
                         end
                     else
@@ -243,7 +243,7 @@ classdef msddp_solver < handle
                         % more numerical stable
                         [R, ~] = chol(Quu_reg);
                         kff = -R\(R'\Qu);
-                        kfb = -R\(R'\Qux);
+                        kfb = -R\(R'\Qux_hat);
                     end
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
@@ -253,7 +253,7 @@ classdef msddp_solver < handle
                     alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-                    dV = alpha * delta1 + 1/2*alpha^2*delta2;
+                    dV = dV + alpha * delta1 + 1/2*alpha^2*delta2;
                 end
             end
             if params.Debug == 1
@@ -310,7 +310,7 @@ classdef msddp_solver < handle
                 success = 0;
                 % run backward pass
                 while success == 0 
-                    [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,path_constraint,final_constraint,xbar,ubar,dft,params);
+                    [dV,~,~,du,K,success] = obj.BackwardPass(rbt,cst,path_constraint,final_constraint,xbar,ubar,dft,params);
                     obj.Reg = max(obj.Reg * 2, 1e-3);
                 end
                 Vprev = Vbar;

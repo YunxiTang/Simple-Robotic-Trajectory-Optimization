@@ -42,13 +42,13 @@ classdef msddp_solver < handle
         
         function [] = solver_Callback(obj,xbar,ubar,params)
             % For plot
-            nx = params.nx;
-            dft = obj.CalDefect(xbar,params);
             for i = 1:obj.M
                 clr = [i, 0.5 * i, 0.5 * i] / obj.M;
                 figure(111);
                 plot3(xbar{i}(1,:),xbar{i}(2,:),xbar{i}(3,:),'Color',clr,'LineWidth',2.0);hold on; 
             end
+            plot3(params.x0(1),params.x0(2),params.x0(3), 'kp', 'MarkerFaceColor', 'b', 'MarkerSize', 15);hold on;
+            plot3(params.xf(1),params.xf(2),params.xf(3), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15);hold on;
             axis equal;
             title('Phase Portrait','Interpreter','latex','FontSize',20);
             grid on;
@@ -62,14 +62,6 @@ classdef msddp_solver < handle
             title('Control Input','Interpreter','latex','FontSize',20);
             grid on;
             hold off;
-            
-            figure(555);
-            title('Defects','Interpreter','latex','FontSize',15);
-            for k=1:nx
-                subplot(nx,1,k);
-                plot(dft(k,:),'s','LineWidth',2.0);
-                grid on;
-            end
             
         end
         
@@ -87,10 +79,10 @@ classdef msddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
-%                 lb = params.umin * ones(params.nu, 1);
-%                 ub = params.umax * ones(params.nu, 1);
+                lb = params.umin * ones(params.nu, 1);
+                ub = params.umax * ones(params.nu, 1);
                 % clamp the control input
-%                 ui = max(lb, min(ub, ui));
+                ui = max(lb, min(ub, ui));
                 usol(:,i) = ui;
                 
                 % Sum up costs

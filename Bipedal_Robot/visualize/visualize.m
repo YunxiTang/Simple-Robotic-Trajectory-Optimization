@@ -45,7 +45,8 @@ function visualize(q, r0, step_number, rbt)
     x_swf = l1*sin(q1) - l2*sin(q2) + x0;
     z_swf = l1*cos(q1) - l2*cos(q2) + z0;
     %% External perturbation 
-    [ext_step_number, value] = ext_perturbation_parameters();
+%     [ext_step_number, value] = ext_perturbation_parameters();
+    ext_step_number = -1;
     if step_number == ext_step_number
         F = value / 100;
     else
@@ -54,14 +55,14 @@ function visualize(q, r0, step_number, rbt)
     %% 
     % Here plot a schematic of the configuration of three link biped at the
     % generalized coordinate q = [q1, q2, q3]:
-    lw = 2;
+    lw = 3;
     % links
     plot([x0, x_h], [z0, z_h], 'linewidth', lw); 
     hold on
-    plot([x_h, x_t], [z_h, z_t], 'linewidth', lw); 
+    plot([x_h, x_t], [z_h, z_t], 'linewidth', lw+2); 
     plot([x_h, x_swf], [z_h, z_swf], 'linewidth', lw);
     % plot a line for "ground"
-    plot([-1 + x_h, 1 + x_h], [0, 0], 'color', 'black');
+    plot([-1 + x_h, 1 + x_h], [0, 0], 'color', 'black','linewidth', lw-1);
     axis 'square'
     xlim([-1 + x_h, 1 + x_h]);
     ylim([-0.8, 1.2]);
@@ -75,6 +76,7 @@ function visualize(q, r0, step_number, rbt)
     % point masses
     mz = 40;
     plot(x1, z1, '.', 'markersize', mz); 
+    plot(x_h, z_h, 'k.', 'markersize', mz/1.1);
     hold on
     plot(x2, z2, '.', 'markersize', mz); 
     plot(x3, z3, '.', 'markersize', mz);

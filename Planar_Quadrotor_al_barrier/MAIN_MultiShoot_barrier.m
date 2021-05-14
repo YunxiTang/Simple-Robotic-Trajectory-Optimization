@@ -12,9 +12,9 @@ exp_date = 'RLB';
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
 log = 0;
 params.dt               = .01;
-params.T                = 5.0;
+params.T                = 6.0;
 params.N                = params.T / params.dt;
-params.shooting_phase   = 50;
+params.shooting_phase   = 100;
 params.x0               = [5.0; 2.5; 0.2; 0.0; 0.0; 0.0];
 params.xf               = [1.0; 1.5; 0.0; 0.0; 0.0; 0.0];
 params.nx               = numel(params.x0);
@@ -27,9 +27,9 @@ params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 5.0;
 params.umin  = 0.1;
 params.Debug = 0;           % 1 -> show details
-params.plot = 0;            % 1 -> show plots during optimization
-params.Max_iter = 500;
-params.stop = 1e-4;
+params.plot = 1;            % 1 -> show plots during optimization
+params.Max_iter = 1500;
+params.stop = 1e-6;
 params.qp = 0;
 params.warm_start = 1;
 
@@ -59,18 +59,18 @@ planar_quad = planar_quadrotor();
 % path constraint
 Obstacles = [2.0 3.0 4.0;
              2.0 1.0 2.0;
-             0.4 0.5 0.4];
+             0.6 0.5 0.6];
 
-path_constraint_func = @(x,u)([0.4*0.4 - ((x(1)-2.0)*(x(1)-2.0)+(x(2)-2.0)*(x(2)-2.0));
+path_constraint_func = @(x,u)([0.6*0.6 - ((x(1)-2.0)*(x(1)-2.0)+(x(2)-2.0)*(x(2)-2.0));
                                0.5*0.5 - ((x(1)-3.0)*(x(1)-3.0)+(x(2)-1.0)*(x(2)-1.0));
-                               0.4*0.4 - ((x(1)-4.0)*(x(1)-4.0)+(x(2)-2.0)*(x(2)-2.0));
-                               -x(2)-0;
-                                x(3)-deg2rad(30);
+                               0.6*0.6 - ((x(1)-4.0)*(x(1)-4.0)+(x(2)-2.0)*(x(2)-2.0));
+                               0-x(2);
+                               x(3)-deg2rad(30);
                                -x(3)-deg2rad(30);
-                                u(1)-5.0;
-                                0.1 - u(1);
-                                u(2)-5.0;
-                                0.1 - u(2)]); % <= 0
+                               u(1)-5.0;
+                               0.1 - u(1);
+                               u(2)-5.0;
+                               0.1 - u(2)]); % <= 0
 
 % TO DO: add final state constraint here
 final_constraint_func = @(xf)([xf(1)-params.xf(1);
@@ -101,7 +101,7 @@ final_cons = final_constraint();
 %% Solve ................................
 tstart = tic;
 [xsol, usol, Ksol] = solver.Solve(planar_quad,cost,path_cons,final_cons,params);
-telapsed = toc(tstart);
+telapsed = toc(tstart)
 
 J_hist = solver.Jstore;
 R_hist = solver.Contract_Rate;
@@ -178,6 +178,15 @@ if log == 1
     save(file_name3,'R_hist');
 end
 
+%%% Save solutions
+filename_t = '.\Opt_Solution\t_sol';
+save(filename_t,'t');
+filename_x = '.\Opt_Solution\x_sol';
+save(filename_x,'xsol');
+filename_u = '.\Opt_Solution\u_sol';
+save(filename_u,'usol');
+filename_K = '.\Opt_Solution\K_sol';
+save(filename_K,'Ksol');
 %%
 %%%%%%%%% animation %%%%%%%%%
 figure(2000);
@@ -189,7 +198,8 @@ plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15)
 plot(xsol(1,:),xsol(2,:),'r-.','LineWidth',2.0);
 hold off;
 planar_quad.animation(t,xsol,k,2000);
-axis equal;
+
 h=legend('$Obstacle\;1$','$Obstacle\;2$','$Obstacle\;3$','$Start \; Point$','$Goal\;Point$','$CoM \; Trajectory$', 'Interpreter','latex','FontSize',13);
 h.NumColumns = 2;
 set (gcf,'Position',[400,100,500,500], 'color','w');
+axis equal;

@@ -6,7 +6,7 @@
 function rbt_animate(sln, rbt)
 
 figure(963);
-skip = 1;
+skip = 5;
 tic();
 num_steps = length(sln.T);
 r0 = [0; 0];
@@ -19,7 +19,7 @@ for j = 1:num_steps
         visualize(q, r0, j, rbt);
         hold off
     end
-    [x0, ~, ~, ~] = kin_swf(q);
+    [x0, ~, ~, ~] = kin_swf(q, rbt);
     r0 = r0 + [x0; 0];
 end
 t_anim = toc();

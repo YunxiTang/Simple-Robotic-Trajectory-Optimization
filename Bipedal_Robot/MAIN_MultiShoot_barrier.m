@@ -3,7 +3,7 @@
 clc;
 clear;
 close all;
-addpath('.\visualize');
+addpath('.\visualize', '.\kinematics');
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%    Date  %%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -11,24 +11,24 @@ addpath('.\visualize');
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%% 
 log = 0;
-params.dt    = .005;
-params.T     =  0.5;
+params.dt    = .001;
+params.T     =  0.2;
 params.N     = params.T / params.dt;
 params.shooting_phase = 1;
-params.x0    = [ 0.0;0.0;0.0;0;0;0];
-params.xf    = [-pi/12;pi/12; 0.0;0;0;0];
+params.x0    = [-deg2rad(10);  deg2rad(10); deg2rad(5); [1.8343;0.3485;0.5153]];
+params.xf    = [ deg2rad(10); -deg2rad(10); deg2rad(5); [1.8343;0.3485;0.5153]/2];
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([1;1;1;0;0;0])*25;
+params.Q     = diag([1;1;1;0.00;0.00;0.00])*1;
 params.R     = eye(params.nu)*1;
-params.Qf    = diag([1;1;1;0;0;0])*50;
+params.Qf    = diag([1;1;1;0.00;0.00;0.00])*5;
 params.Rf    = eye(params.nu);
-params.Reg_Type = 1;        % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 500;
-params.umin  = -500;
+params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
+params.umax  = 200;
+params.umin  = -200;
 params.Debug = 1;           % 1 -> show details
 params.plot = 1;            % 1 -> show plots during optimization
-params.Max_iter = 200;
+params.Max_iter = 500;
 params.stop = 1e-4;
 params.qp = 0;
 nt = params.T / params.shooting_phase;
@@ -38,7 +38,7 @@ for i=1:params.shooting_phase
 end
 params.t = tax;
 t = 0.0:params.dt:params.T;
-
+eps = .001;
 %~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~~%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%% create robot,constraints & cost mdl %%%%%
@@ -49,16 +49,15 @@ rbt = Bipedal();
 
 %%% wrap up the constraints as a whole function handle
 % path constraint
-path_constraint_func = @(x,u)([u(1)-params.umax;
+
+path_constraint_func = @(x,u)([ u(1)-params.umax;
                                 params.umin-u(1);
                                 u(2)-params.umax;
                                 params.umin-u(2);
-                                x(1)-1.1*params.xf(1);
-                                1.1*params.x0(1)-x(1);
-                                x(2)-1.1*params.xf(2);
-                                1.1*params.x0(2)-x(2);
-                                x(3)-0.2;
-                                -0.2-x(3)]); % <= 0
+                                x(2)-tanh(-x(1));
+                                tanh(-x(1))-x(2);
+                                x(3)-deg2rad(10);
+                                deg2rad(0)-x(3)]); % <= 0
 
 % TO DO: add final state constraint here
 final_constraint_func = @(xf)([xf(1)-params.xf(1);
@@ -66,7 +65,8 @@ final_constraint_func = @(xf)([xf(1)-params.xf(1);
                                xf(2)-params.xf(2);
                                params.xf(2)-xf(2);
                                xf(3)-params.xf(3);
-                               params.xf(3)-xf(3)]); % < 0
+                               params.xf(3)-xf(3);
+                               ]); % < 0
 
 % cost model
 cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf);
@@ -127,8 +127,8 @@ grid on;
 % plot(t(1:end-1), squeeze(Ksol(2,:,:)),'b-.','LineWidth',2.0);hold on;
 % grid on;
 %%
-
-constraint_voilation = zeros(10, params.N);
+N_ineq = numel(path_constraint_func(zeros(params.nx), zeros(params.nu)));
+constraint_voilation = zeros(N_ineq, params.N);
 for m=1:params.N
     xm = xsol(:,m);
     um = usol(:,m);
@@ -152,6 +152,19 @@ if log == 1
 end
 
 %% 
-sln.T = params.t;
+sln.T = {t};
 sln.Y = {xsol};
 rbt_animate(sln, rbt)
+
+%% \
+X_swf = zeros(params.N+1,1);
+Z_swf = zeros(params.N+1,1);
+for i=1:(params.N+1)
+    qi = xsol(:,i);
+    [x_swf, z_swf, ~, ~] = kin_swf(qi, rbt);
+    X_swf(i) = x_swf;
+    Z_swf(i) = z_swf;
+end
+
+figure();
+plot(X_swf,Z_swf);

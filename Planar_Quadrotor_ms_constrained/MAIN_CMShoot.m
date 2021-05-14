@@ -13,24 +13,24 @@ exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
 params.dt               =  .01;
-params.T                =  5.0;
+params.T                =  6.0;
 params.N                = params.T / params.dt;
-params.shooting_phase   = 50;
+params.shooting_phase   = 100;
 params.x0               = [5.0; 2.5; 0.2; 0.0; 0.0; 0.0];
 params.xf               = [1.0; 1.5; 0.0; 0.0; 0.0; 0.0];
 params.nx               = numel(params.x0);
 params.nu               = 2;
-params.Q                = diag([1 1 1 1 1 1]);
+params.Q                = diag([1 1 1 1 1 1])*0;
 params.R                = diag([0.1 0.1]);
-params.Qf               = diag([5 5 5 5 5 5])*10;
+params.Qf               = diag([5 5 5 5 5 5])*5;
 params.Rf               = eye(params.nu);
 params.Reg_Type         = 2;     % 1->reg of Quu  / 2->reg of Vxx
 params.umax             = 5.0;
 params.umin             = 0.1;
-params.Debug            = 0;     % 1 -> show details
+params.Debug            = 1;     % 1 -> show details
 params.plot             = 0;     % 1 -> show plots during optimization
 params.Max_iter         = 500;
-params.stop             = 1e-3;
+params.stop             = 1e-6;
 params.qp               = 0;
 params.clamp            = 1;
 nt                      = params.T / params.shooting_phase;
@@ -53,7 +53,7 @@ params.MapNo = 1;
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 Obstacles = [2.0 3.0 4.0;
              2.0 1.0 2.0;
-             0.4 0.5 0.4];
+             0.6 0.5 0.6];
 
 Constraints = constraint(Obstacles, params.dt);
 

@@ -121,9 +121,9 @@ classdef ddp_solver < handle
                 ui = ubar(:,i);
                 Vxi = Vx(:,i+1);
                 Vxxi = Vxx(:,:,i+1);
-                [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,xi,ui,Vxi,Vxxi,params);
+                [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Q_info(rbt,cst,xi,ui,Vxi,Vxxi,params);
                 % regularization
-                Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                 % Make sure Quu is PD, if not, exit and increase regularization
                 [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                 if FLAG ~= 0 
@@ -136,7 +136,7 @@ classdef ddp_solver < handle
                 end
                 % Standard Recursive Equations
                 kff = -Quu_reg\Qu;
-                kfb = -Quu_reg\Qux;
+                kfb = -Quu_reg\Qux_hat;
                 du(:,i)  = kff;
                 K(:,:,i) = kfb;
                 Vx(:,i)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
@@ -161,7 +161,7 @@ classdef ddp_solver < handle
                 ratio = (V - Vprev)/(alpha*(1-alpha/2)*dV);
                 if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
-                          alpha,V-Vprev, obj.gamma*alpha*(1-alpha/2)*dV,ratio);
+                          alpha, V - Vprev, obj.gamma*alpha*(1-alpha/2)*dV,ratio);
                 end
                 if V < Vprev + obj.gamma * alpha*(1-alpha/2)*dV
                     break

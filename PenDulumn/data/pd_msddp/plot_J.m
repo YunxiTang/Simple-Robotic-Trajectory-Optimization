@@ -22,23 +22,23 @@ t500 = load('T500.mat');    te500 = t500.telapsed;
 
 figure(111);
 points = 1;
-plot(1:points:L1,S1(1:points:L1),'r-o','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L2,S2(1:points:L2),'b-o','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L5,S5(1:points:L5),'g-o','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L10,S10(1:points:L10),'b-x','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L20,S20(1:points:L20),'r-x','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L25,S25(1:points:L25),'g-x','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L50,S50(1:points:L50),'m-x','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L100,S100(1:points:L100),'m-d','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L250,S250(1:points:L250),'r-d','LineWidth',1.0,'MarkerSize',8.0); hold on;
-plot(1:points:L500,S500(1:points:L500),'b-d','LineWidth',1.0,'MarkerSize',8.0); hold on;
+plot(1:points:L1,S1(1:points:L1),'Color',[0.8500 0.3250 0.0980],'LineWidth',3.0); hold on;
+plot(1:points:L2,S2(1:points:L2),'Color',[0.9290 0.6940 0.1250],'LineWidth',3.0,'MarkerSize',8.0); hold on;
+plot(1:points:L5,S5(1:points:L5),'Color',[0.4940 0.1840 0.5560],'LineWidth',3.0,'MarkerSize',8.0); hold on;
+plot(1:points:L10,S10(1:points:L10),'Color',[0.4660 0.6740 0.1880],'LineWidth',3.0,'MarkerSize',8.0); hold on;
+plot(1:points:L20,S20(1:points:L20),'Color',[0.3010 0.7450 0.9330],'LineWidth',3.0,'MarkerSize',8.0); hold on;
+plot(1:points:L25,S25(1:points:L25),'Color',[0.6350 0.0780 0.1840],'LineWidth',3.0,'MarkerSize',8.0); hold on;
+plot(1:points:L50,S50(1:points:L50),'c','LineWidth',3.0,'MarkerSize',8.0); hold on;
+plot(1:points:L100,S100(1:points:L100),'m','LineWidth',3.0,'MarkerSize',8.0); hold on;
+plot(1:points:L250,S250(1:points:L250),'r','LineWidth',3.0,'MarkerSize',8.0); hold on;
+plot(1:points:L500,S500(1:points:L500),'b','LineWidth',3.0,'MarkerSize',8.0); hold on;
 plot(S1(end)*ones(length(S1)),'k--','LineWidth',2.0);
 ha=gca;
 set(ha,'yscale','log');
 set(ha,'xscale','log');
 grid on;
-title('Cost v.s. Iterations','Interpreter','latex','FontSize',15);
-xlabel('Iter','Interpreter','latex','FontSize',15);
+% title('Cost v.s. Iterations','Interpreter','latex','FontSize',15);
+xlabel('Iteration','Interpreter','latex','FontSize',15);
 ylabel('Cost','Interpreter','latex','FontSize',15);
 lgd = legend('Shooting Phase: 1','Shooting Phase: 2','Shooting Phase: 5','Shooting Phase: 10','Shooting Phase: 20','Shooting Phase: 25','Shooting Phase: 50','Shooting Phase: 100',...
        'Shooting Phase: 250','Shooting Phase: 500','Interpreter','latex','FontSize',12);
@@ -51,12 +51,12 @@ time = [te1 te2 te5 te10 te20 te25 te50 te100 te250 te500];
 
 set(fig,'defaultAxesColorOrder',[[1 0 0]; [0 0 0]]);
 yyaxis left
-semilogx(Ms,Iters,'rd--','LineWidth',0.5,'MarkerFaceColor','r','MarkerEdgeColor','r','MarkerSize',8.0);hold on;
-ylabel('Iter','Interpreter','latex','FontSize',15);
+semilogx(Ms,Iters,'rd-','LineWidth',2.0,'MarkerFaceColor','r','MarkerEdgeColor','r','MarkerSize',8.0);hold on;
+% ylim([25,57]);
+ylabel('Iteration No.','Interpreter','latex','FontSize',15);
 yyaxis right
-semilogx(Ms,time, 'ks--','LineWidth',0.5,'MarkerFaceColor','k','MarkerEdgeColor','k','MarkerSize',8.0);
-ylabel('Computation Time [s]','Interpreter','latex','FontSize',15);
-title('Different  Shooting Phase','Interpreter','latex','FontSize',15);
-xlabel('Shooting Phase','Interpreter','latex','FontSize',15);
+semilogx(Ms,time, 'ks-','LineWidth',2.0,'MarkerFaceColor','k','MarkerEdgeColor','k','MarkerSize',8.0);
+ylabel('CPU Time [s]','Interpreter','latex','FontSize',15);
+xlabel('M','Interpreter','latex','FontSize',15);
 
 grid on;

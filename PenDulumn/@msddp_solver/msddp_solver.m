@@ -130,7 +130,13 @@ classdef msddp_solver < handle
                     xbar{i}(:,1) = xbar{i}(:,1);
                     x0 = xbar{i}(:,1);
                 else
-                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+                    %%% Method 1: From Crocoddyl
+%                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+                    
+                    %%% Method 2: From Control Toolbox of ETHz
+                    [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
+                    tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
+                    x0 = xbar{i}(:,1) +  (0.8) * (tilda) + dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -142,7 +148,7 @@ classdef msddp_solver < handle
             % backward propogation
             success = 1;
             % dV: tocompute the expected cost reduction
-            dV = 0.0;
+            dV = [0.0, 0.0];
             % initialize Vx, Vxx, du, K
             Vx = cell(obj.M, 1);
             Vxx = cell(obj.M, 1);
@@ -173,16 +179,16 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params);
                     % regularization
-                    Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                    Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
                     [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                     while FLAG ~= 0 
                         % Quu is not PD, then increase Reg factor until Quu
                         % is PD
                         obj.Reg = obj.Reg + 1e-3;
-                        Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                        Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                         [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                         if params.Debug == 1
                             fprintf(' \t \t [SubSubInfo]: Reg=%5f:  Regularization <-- Increase Reg. \n', obj.Reg);
@@ -191,15 +197,15 @@ classdef msddp_solver < handle
                     
                     % Standard Recursive Equations
                     kff = -Quu_reg\Qu;
-                    kfb = -Quu_reg\Qux;
+                    kfb = -Quu_reg\Qux_hat;
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
                     Vxx{i}(:,:,j) = Qxx + Qxu*kfb + kfb'*Qux + kfb'*Quu*kfb;
-                    alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-                    dV = alpha * delta1 + 1/2*alpha^2*delta2;
+                    dV(1) = dV(1) + delta1;
+                    dV(2) = dV(2) ++ 1/2*delta2;
                 end
             end
             if params.Debug == 1
@@ -207,7 +213,7 @@ classdef msddp_solver < handle
             end
         end
         
-        function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,dV,rbt,cst,params)
+        function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,DV,rbt,cst,params)
             % Check the Forward Pass is accepted or not (IMPORTANT!!!)
             % if not, adjust the line-search factor  (Armijo backtracking
             % line search)
@@ -218,6 +224,7 @@ classdef msddp_solver < handle
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
+                dV = alpha * DV(1) + alpha^2 * DV(2);
                 ratio = (V - Vprev)/(dV);
                 if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
@@ -265,7 +272,7 @@ classdef msddp_solver < handle
                     fprintf('[INFO]: Iteration %3d   ||  Cost %.12e \n',obj.iter,Vbar);
                 end
                 % run backward pass
-                [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);
+                [dV,~,~,du,K,~] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);
                 Vprev = Vbar;
                 
                 % Set regularization back to 0 for next backward pass
@@ -275,7 +282,7 @@ classdef msddp_solver < handle
                 obj.Update_iter();
                 [dft] = obj.CalDefect(xbar,params);
                 change = Vprev - Vbar;
-                if change < params.stop 
+                if change < params.stop && obj.iter > 3
                     break
                 end
             end

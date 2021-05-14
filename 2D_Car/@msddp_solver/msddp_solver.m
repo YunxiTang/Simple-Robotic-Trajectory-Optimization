@@ -178,9 +178,9 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params);
                     % regularization
-                    Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                    Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
                     [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                     while FLAG ~= 0 
@@ -196,7 +196,7 @@ classdef msddp_solver < handle
                     
                     % Standard Recursive Equations
                     kff = -Quu_reg\Qu;
-                    kfb = -Quu_reg\Qux;
+                    kfb = -Quu_reg\Qux_hat;
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
@@ -204,7 +204,7 @@ classdef msddp_solver < handle
                     alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-                    dV = alpha * delta1 + 1/2*alpha^2*delta2;
+                    dV = dV + alpha * delta1 + 1/2*alpha^2*delta2;
                 end
             end
             if params.Debug == 1
