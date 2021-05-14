@@ -42,19 +42,19 @@ end
 % fprintf('\nlimit exceeded by 1 percent: %.2g percent of times', e2);
 % 
 % %% angles vs time
-% figure();
-% subplot(2, 1, 1);
-%     plot(time, sol(1:3,:));
-%     title('angles vs time');
-%     xlabel('time');
-%     ylabel('rad');
-%     legend('q1', 'q2', 'q3');
-% subplot(2, 1, 2)
-%     plot(time, sol(4:6,:));
-%     title('angular velocities vs time');
-%     xlabel('time');
-%     ylabel('rad/s');
-%     legend('dq1', 'dq2', 'dq3');
+figure();
+subplot(2, 1, 1);
+    plot(time, sol(1:3,:));
+    title('angles vs time');
+    xlabel('time');
+    ylabel('rad');
+    legend('q1', 'q2', 'q3');
+subplot(2, 1, 2)
+    plot(time, sol(4:6,:));
+    title('angular velocities vs time');
+    xlabel('time');
+    ylabel('rad/s');
+    legend('dq1', 'dq2', 'dq3');
 
 %% velocity of the robot vs time
 v_h = l1 .* sol(4,:) .* cos(sol(1,:));
@@ -68,13 +68,13 @@ ylabel('m/s');
 legend('v');
 
 % %% step lenght vs step number
-% figure();
-% d_s = l2 .* sin(y_e(2,:)) + l1 .* sin(y_e(1,:));
-% stem(1:steps, d_s);
-% title('step lenght vs step');
-% xlabel('step');
-% ylabel('m');
-% legend('step lenght');
+figure();
+d_s = l2 .* sin(y_e(2,:)) + l1 .* sin(y_e(1,:));
+stem(1:steps, d_s);
+title('step lenght vs step');
+xlabel('step');
+ylabel('m');
+legend('step lenght');
 % 
 % %% displacement in each step vs step number
 % figure()
@@ -136,23 +136,23 @@ legend('u1', 'u2', 'u1_0', 'u2_0');
 %     legend('CoT');
 % 
 % %% q vs dq for all three angles.
-% figure();
-% subplot(3, 1, 1);
-%     plot(sol(1,:), sol(4,:));
-%     title('dq1 vs q1');
-%     xlabel('rad');
-%     ylabel('rad/s');
-%     legend('dq1');
-% subplot(3, 1, 2);
-%     plot(sol(2,:), sol(5,:));
-%     title('dq2 vs q2');
-%     xlabel('rad');
-%     ylabel('rad/s');
-%     legend('dq2');
-% subplot(3, 1, 3);
-%     plot(sol(3,:), sol(6,:));
-%     title('dq3 vs q3');
-%     xlabel('rad');
-%     ylabel('rad/s');
-%     legend('dq3');
+figure();
+subplot(3, 1, 1);
+    plot(sol(1,:), sol(4,:));
+    title('dq1 vs q1');
+    xlabel('rad');
+    ylabel('rad/s');
+    legend('dq1');
+subplot(3, 1, 2);
+    plot(sol(2,:), sol(5,:));
+    title('dq2 vs q2');
+    xlabel('rad');
+    ylabel('rad/s');
+    legend('dq2');
+subplot(3, 1, 3);
+    plot(sol(3,:), sol(6,:));
+    title('dq3 vs q3');
+    xlabel('rad');
+    ylabel('rad/s');
+    legend('dq3');
 end

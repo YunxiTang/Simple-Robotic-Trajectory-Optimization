@@ -51,14 +51,14 @@ function visualize(q, r0, step_number)
     %% 
     % Here plot a schematic of the configuration of three link biped at the
     % generalized coordinate q = [q1, q2, q3]:
-    lw = 2;
+    lw = 4;
     % links
     plot([x0, x_h], [z0, z_h], 'linewidth', lw); 
     hold on
     plot([x_h, x_t], [z_h, z_t], 'linewidth', lw); 
     plot([x_h, x_swf], [z_h, z_swf], 'linewidth', lw);
     % plot a line for "ground"
-    plot([-1 + x_h, 1 + x_h], [0, 0], 'color', 'black');
+    plot([-1 + x_h, 1 + x_h], [0, 0], 'color', 'black','linewidth', 1);
     axis 'square'
     xlim([-1 + x_h, 1 + x_h]);
     ylim([-0.8, 1.2]);

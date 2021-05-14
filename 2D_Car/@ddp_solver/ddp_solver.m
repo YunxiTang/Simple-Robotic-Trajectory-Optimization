@@ -1,4 +1,3 @@
-
 classdef ddp_solver < handle
     %DDPSOLVER ddp solver
     
@@ -60,9 +59,9 @@ classdef ddp_solver < handle
             % Make initial Guess of Trajectory
             for i = 1:(params.N-1)
                 % Option 1: PD Control
-%                 ui = -[15 5] * (xi - params.xf);
+                ui = -[1 1 1 1;1 1 1 1] * (xi - params.xf);
                 % Option 2: Zero Control
-                ui = zeros(params.nu,1);
+%                 ui = zeros(params.nu,1);
                 % Option 3: Random Control
                 ubar(:,i) = ui;
                 xi = rbt.rk(xi,ui,params.dt);
@@ -120,9 +119,9 @@ classdef ddp_solver < handle
                 ui = ubar(:,i);
                 Vxi = Vx(:,i+1);
                 Vxxi = Vxx(:,:,i+1);
-                [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,xi,ui,Vxi,Vxxi,params);
+                [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Q_info(rbt,cst,xi,ui,Vxi,Vxxi,params);
                 % regularization
-                Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                 % Make sure Quu is PD, if not, exit and increase regularization
                 [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                 if FLAG ~= 0 
@@ -135,7 +134,7 @@ classdef ddp_solver < handle
                 end
                 % Standard Recursive Equations
                 kff = -Quu_reg\Qu;
-                kfb = -Quu_reg\Qux;
+                kfb = -Quu_reg\Qux_hat;
                 du(:,i)  = kff;
                 K(:,:,i) = kfb;
                 Vx(:,i)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;

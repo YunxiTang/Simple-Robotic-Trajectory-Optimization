@@ -2,9 +2,9 @@ classdef final_constraint < handle
     %FINAL_CONSTRAINT final_state_constraint here
     
     properties
-        delta = 0.001,
-        mu = 50,
-        t = 20
+        delta = 0.01,
+        mu = 500,
+        t = 1
     end
     
     methods
@@ -20,7 +20,7 @@ classdef final_constraint < handle
         
         function [] = update_t(obj)
             obj.t = obj.t + obj.mu; 
-            obj.delta = obj.delta / 1.0001;
+            obj.delta = obj.delta / 1.001;
         end
         
         function Penalty = penalty(obj, x)

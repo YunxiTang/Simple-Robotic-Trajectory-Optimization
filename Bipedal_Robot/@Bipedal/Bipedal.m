@@ -5,7 +5,7 @@ classdef Bipedal < handle
         Name = 'Bipedal',
         m1 = 7;
         m2 = 7;
-        m3 = 15;
+        m3 = 10;
 
         l1 = 0.5;
         l2 = 0.5;
@@ -17,7 +17,7 @@ classdef Bipedal < handle
     methods
         function obj = Bipedal()
             %BIPEDAL 
-            fprintf('[INFO]: Creating A Three-link Bipedal Robot.');
+            fprintf('[INFO]: Creating A Three-link Bipedal Robot.\n');
         end
         
         function [M, C, G, B] = EoM(obj, x)
@@ -28,10 +28,10 @@ classdef Bipedal < handle
             dq2 = x(5);
             dq3 = x(6);
 
-            M = eval_M_tmp(obj.l1,obj.l2,obj.l3,obj.m1,obj.m2,obj.m3,q1,q2,q3);
-            C = eval_C_tmp(dq1,dq2,dq3,obj.l1,obj.l2,obj.l3,obj.m2,obj.m3,q1,q2,q3);
-            G = eval_G_tmp(obj.g,obj.l1,obj.l2,obj.l3,obj.m1,obj.m2,obj.m3,q1,q2,q3);
-            B = eval_B_tmp();
+            M = obj.eval_M_tmp(obj.l1,obj.l2,obj.l3,obj.m1,obj.m2,obj.m3,q1,q2,q3);
+            C = obj.eval_C_tmp(dq1,dq2,dq3,obj.l1,obj.l2,obj.l3,obj.m2,obj.m3,q1,q2,q3);
+            G = obj.eval_G_tmp(obj.g,obj.l1,obj.l2,obj.l3,obj.m1,obj.m2,obj.m3,q1,q2,q3);
+            B = obj.eval_B_tmp();
         end
         
         function xd = Dynamics(obj, t, x, u)

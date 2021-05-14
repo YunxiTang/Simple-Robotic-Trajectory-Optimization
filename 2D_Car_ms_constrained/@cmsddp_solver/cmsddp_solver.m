@@ -8,13 +8,13 @@ classdef cmsddp_solver < handle
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.1,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = []    % store real costs
         u_perturb = [],% constrol noise
         Lambda     ,   % dual variabels.      
         Mu         ,   % penalty multipliers. 
-        phi = 2,       % penalty scaling parameter
+        phi = 10,       % penalty scaling parameter
         Constraint,     % constraints
         ctrst_vil
     end
@@ -246,9 +246,9 @@ classdef cmsddp_solver < handle
                     lambda_ij = obj.Lambda{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Qcms_info(rbt,cst,obj.Constraint,lambda_ij,Imu_ij,x_ij,u_ij,Vx_ij,Vxx_ij,params,obj.iter);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qcms_info(rbt,cst,obj.Constraint,lambda_ij,Imu_ij,x_ij,u_ij,Vx_ij,Vxx_ij,params,obj.iter);
                     % regularization
-                    Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                    Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
                     [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                     if FLAG ~= 0 
@@ -268,10 +268,10 @@ classdef cmsddp_solver < handle
                         ub = params.umax * ones(params.nu, 1);
                         lower = lb - u_ij;
                         upper = ub - u_ij;
-                        [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                        [kff,~,R,free] = boxQP(Quu_reg, Qu, lower, upper);
                         kfb = zeros(params.nu, params.nx);
                         if any(free)
-                            Lfree = -R\(R'\Qux(free,:));
+                            Lfree = -R\(R'\Qux_hat(free,:));
                             kfb(free,:) = Lfree;
                         end
                     else
@@ -279,9 +279,7 @@ classdef cmsddp_solver < handle
                         % more numerical stable
                         [R, ~] = chol(Quu_reg);
                         kff = -R\(R'\Qu);
-                        kfb = -R\(R'\Qux);
-%                         kff = -Quu_reg\Qu;
-%                         kfb = -Quu_reg\Qux;
+                        kfb = -R\(R'\Qux_hat);
                     end
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
@@ -290,8 +288,9 @@ classdef cmsddp_solver < handle
                     alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-                    dV = alpha * delta1 + 1/2*alpha^2*delta2;
+                    dV = dV + alpha * delta1 + 1/2*alpha^2*delta2;
                 end
+                
                 if success == 0
                     break
                 end
@@ -305,7 +304,6 @@ classdef cmsddp_solver < handle
             % Check the Forward Pass is accepted or not (IMPORTANT!!!)
             % if not, adjust the line-search factor  (Armijo backtracking
             % line search)
-            
             V = 0;
             obj.eps = 1.0;
             alpha = obj.eps;
@@ -316,7 +314,7 @@ classdef cmsddp_solver < handle
                 ratio = (V - Vprev)/(dV);
                 if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
-                          alpha,V-Vprev, obj.gamma*dV,ratio);
+                          alpha,V-Vprev, obj.gamma*dV, ratio);
                 end
                 if dV < 0 && V < Vprev + obj.gamma * dV
                     break
