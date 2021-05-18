@@ -2,7 +2,7 @@ clc; clear;
 import casadi.*
 
 params.T = 3;
-params.N = 30;
+params.N = 150;
 params.xf = [0.0;pi;0.0;0.0];
 params.Q = eye(4);
 params.R = 0.1 * eye(1);

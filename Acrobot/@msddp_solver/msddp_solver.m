@@ -7,7 +7,7 @@ classdef msddp_solver < handle
         Reg = 1e-3,    % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
-        gamma = 0.1,   % threshold to accept a FW step
+        gamma = 0.01,   % threshold to accept a FW step
         beta = 0.8,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = [],   % store real costs
@@ -164,7 +164,7 @@ classdef msddp_solver < handle
             % backward propogation
             success = 1;
             % dV: tocompute the expected cost reduction
-            dV = 0.0;
+            dV = [0.0,0.0];
             % initialize Vx, Vxx, du, K
             Vx = cell(obj.M, 1);
             Vxx = cell(obj.M, 1);
@@ -195,9 +195,9 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params,obj.iter);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params,obj.iter);
                     % regularization
-                    Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                    Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
                     [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                     if FLAG > 0 
@@ -211,16 +211,17 @@ classdef msddp_solver < handle
                     end
                     
                     % Standard Recursive Equations
-                    kff = -Quu_reg\Qu;
-                    kfb = -Quu_reg\Qux;
+                    [R, ~] = chol(Quu_reg);
+                    kff = -R\(R'\Qu);
+                    kfb = -R\(R'\Qux_hat);
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
                     Vxx{i}(:,:,j) = Qxx + Qxu*kfb + kfb'*Qux + kfb'*Quu*kfb;
-                    alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-                    dV = alpha * delta1 + 1/2*alpha^2*delta2;
+                    dV(1) = dV(1) + delta1;
+                    dV(2) = dV(2) + 1/2*delta2;
                 end
                 if success == 0
                     break
@@ -231,7 +232,7 @@ classdef msddp_solver < handle
             end
         end
         
-        function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,dV,rbt,cst,params)
+        function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,DV,rbt,cst,params)
             % Check the Forward Pass is accepted or not (IMPORTANT!!!)
             % if not, adjust the line-search factor  (Armijo backtracking
             % line search)
@@ -242,6 +243,7 @@ classdef msddp_solver < handle
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
+                dV = alpha * DV(1) + alpha^2 * DV(2);
                 ratio = (V - Vprev)/(dV);
                 if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
@@ -258,6 +260,12 @@ classdef msddp_solver < handle
                 end
                 % Else, do backtracking
                 obj.eps = obj.beta * obj.eps;
+            end
+            if alpha <= 1e-5
+                V = Vprev;
+                x = xbar;
+                u = ubar;
+                ratio = 1;
             end
             obj.J_pushback(V);
             obj.Rate_pushback(ratio);

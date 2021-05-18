@@ -7,7 +7,7 @@ classdef msddp_solver < handle
         Reg = 0.0,         % how much to regularize
         Reg_Type = 1,       % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,          % eps: line-search parameter  
-        gamma = 0.1,        % threshold to accept a FW step
+        gamma = 0.001,        % threshold to accept a FW step
         beta = 0.5,         % for line-search backtracking
         iter = 0,           % count iterations
         Jstore = [],        % store real costs
@@ -287,6 +287,12 @@ classdef msddp_solver < handle
                 end
                 % Else, do backtracking
                 obj.eps = obj.beta * obj.eps;
+            end
+            if alpha <= 1e-5
+                V = Vprev;
+                x = xbar;
+                u = ubar;
+                ratio = 1;
             end
             obj.J_pushback(V);
             obj.Rate_pushback(ratio);

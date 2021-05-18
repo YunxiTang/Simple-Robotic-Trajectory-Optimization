@@ -268,7 +268,7 @@ classdef msddp_solver < handle
             V = 0;
             obj.eps = 1.0;
             alpha = obj.eps;
-            while alpha > 1e-7
+            while alpha > 1e-5
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,path_constraint,final_constraint,params,xbar,ubar,du,K);
@@ -328,8 +328,12 @@ classdef msddp_solver < handle
                 change = Vprev - Vbar;
                 DU = cell2mat(du);
                 DU = reshape(DU,(params.nu*params.shooting_phase*obj.L),1);
-                if (change) < params.stop && obj.iter > 5 || all(DU<1e-3)
+                if (change) < params.stop && obj.iter > 5
+                    fprintf('[INFO]: Value Function Converge. \n');
                     break
+                elseif norm((DU)) < 1e-2
+                    fprintf('[INFO]: Action Function Converge. \n');
+                    break  
                 end
                 obj.Update_iter();
                 if mod(obj.iter, 1)==0

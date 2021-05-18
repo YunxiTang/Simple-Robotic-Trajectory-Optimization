@@ -8,7 +8,7 @@ rbt = CartPole();
 %% params for optimization
 params.T = 3.0;
 params.maxForce = 25.0;
-params.N = 300;
+params.N = 150;
 params.Q = eye(rbt.Nx);
 params.Qf = 5 * eye(rbt.Nx);
 params.R = 0.1 * eye(rbt.Nu);
@@ -62,7 +62,7 @@ toc
 soln.info
 
 %% Unpack the simulation
-t = linspace(soln.grid.time(1), soln.grid.time(end), 500);
+t = linspace(soln.grid.time(1), soln.grid.time(end), 300);
 z = soln.interp.state(t);
 u = soln.interp.control(t);
 

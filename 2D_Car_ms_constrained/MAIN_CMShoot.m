@@ -13,14 +13,14 @@ exp_date = date;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 log = 0;
 params.dt               =  .01;
-params.T                =  3.0;
+params.T                =  6.0;
 params.N                = params.T / params.dt;
 params.shooting_phase   = 100;
-params.x0               = [1.0;0.0;0.0;0.0];
+params.x0               = [0.0;0.0;0.0;0.0];
 params.xf               = [2.5;3.0;pi/2;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 2;
-params.Q                = diag([1 1 1 1]);
+params.Q                = diag([1 1 1 1])*1;
 params.R                = diag([0.1 0.1]);
 params.Qf               = diag([5 5 5 5])*50;
 params.Rf               = eye(params.nu);

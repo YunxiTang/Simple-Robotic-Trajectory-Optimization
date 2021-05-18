@@ -16,7 +16,7 @@ Kref = Ksol.Ksol;
 %% Build a robot
 planar_quad = planar_quadrotor();
 params.dt = .01;
-params.T  = 6.0;
+params.T  = 5.0;
 params.x0 = xref(:,1);
 params.xf = [1.0; 1.5; 0.0; 0.0; 0.0; 0.0];
 params.umax = 5.0;

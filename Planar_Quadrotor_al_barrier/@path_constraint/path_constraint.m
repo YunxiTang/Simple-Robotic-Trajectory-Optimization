@@ -4,7 +4,7 @@ classdef path_constraint < handle
     properties
         delta = 0.0001,
         mu = 100,
-        t = 10
+        t = 100
     end
     
     methods
