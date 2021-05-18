@@ -14,14 +14,14 @@ log = 0;
 params.dt    = .01;
 params.T     = 5.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 100;
+params.shooting_phase = 5;
 params.x0    = [0.0; 0.0; 0.0; 0.0];
 params.xf    = [3.14; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
 params.nu    = 1;
 params.Q     = diag([0.1 0.1 0.1 0.1])*10;
-params.R     = 0.1;
-params.Qf    = diag([0.1 0.1 0.1 0.1])*1200;
+params.R     = 1;
+params.Qf    = diag([0.1 0.1 0.1 0.1])*1500;
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 30;
@@ -29,7 +29,7 @@ params.umin  = -30;
 params.Debug = ~log;     % 1 -> show details
 params.plot = 1;      % 1 -> show plots during optimization
 params.Max_iter = 500;
-params.stop = 1e-9;
+params.stop = 1e-6;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase
@@ -56,9 +56,12 @@ solver = msddp_solver(params);
 tstart = tic;
 [xsol, usol, Ksol] = solver.Solve(acrobot,cost,params);
 telapsed = toc(tstart)
-
+%%
 figure(888);
-plot(solver.Jstore,'b-o','LineWidth',2.0);
+plot(solver.Jstore,'b-o','LineWidth',1.5);
+ha=gca;
+set(ha,'yscale','log');
+set(ha,'xscale','log');
 J_hist = solver.Jstore;
 R_hist = solver.Contract_Rate;
 %%%% data logging %%%

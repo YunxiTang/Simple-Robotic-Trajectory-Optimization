@@ -1,12 +1,12 @@
 clc; clear;
 import casadi.*
 
-params.T = 5;
-params.N = 50;
+params.T = 3;
+params.N = 300;
 params.x0 = [-0.5;0.0;0.0;0.0];
 params.xf = [2.5;3.0;pi/2;0.0];
 params.Q = eye(4);
-params.R = 0.1 * eye(1);
+params.R = eye(1);
 params.Qf = 250 * eye(4);
 params.umax =  [4.5;4.5];
 params.umin = -[4.5;4.5];
@@ -22,9 +22,9 @@ u = MX.sym('u',2);
 xdot = Dynamics(x,u);
 
 % objective function terms
-L_path = (x - params.xf)' * params.Q * (x - params.xf) + ...
-         (u)' * params.R * (u);
-L_final = (x - params.xf)' * params.Qf * (x - params.xf);
+L_path = 0.5*(x - params.xf)' * params.Q * (x - params.xf) + ...
+         0.5*(u)' * params.R * (u);
+L_final = 0.5*(x - params.xf)' * params.Qf * (x - params.xf);
 
 % formulate the discrete dynamics
 f = Function('f', {x, u}, {xdot, L_path});
@@ -113,8 +113,15 @@ u_opt = reshape(w_opt,[params.nu,params.N]);
 figure();
 plot(u_opt');
 x_opt = params.x0;
+Jr = 0.0;
 for k=0:(params.N-1)
     Fk = F('x0',x_opt(:,end), 'p', u_opt(:,k+1));
+    if k==(params.N-1)
+        Jrk = qf(full(Fk.xf));
+    else
+        Jrk = Fk.qf;
+    end
+    Jr = Jr + full(Jrk);
     x_opt = [x_opt, full(Fk.xf)];
 end
 figure(2000);

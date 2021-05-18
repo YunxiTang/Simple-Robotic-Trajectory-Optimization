@@ -1,8 +1,8 @@
 clc; clear;
 import casadi.*
 
-params.T = 5;
-params.N = 500;
+params.T = 6;
+params.N = 300;
 params.x0 = [5.0; 2.5; 0.2; 0.0; 0.0; 0.0];
 params.xf = [1.0; 1.5; 0.0; 0.0; 0.0; 0.0];
 params.Q =  diag([1 1 1 1 1 1]);
@@ -22,9 +22,9 @@ u = MX.sym('u',params.nu);
 xdot = Dynamics(x,u);
 
 % objective function terms
-L_path = (x - params.xf)' * params.Q * (x - params.xf) + ...
-         (u)' * params.R * (u);
-L_final = (x - params.xf)' * params.Qf * (x - params.xf);
+L_path = 0.5*(x - params.xf)' * params.Q * (x - params.xf) + ...
+         0.5*(u)' * params.R * (u);
+L_final = 0.5*(x - params.xf)' * params.Qf * (x - params.xf);
 
 % formulate the discrete dynamics
 f = Function('f', {x, u}, {xdot, L_path});
@@ -89,9 +89,9 @@ for k=0:(params.N-1)
     J = J + Jk;
     
     %%% Add inequality constraints
-    gk = [0.4*0.4 - ((Xk(1)-2.0)*(Xk(1)-2.0)+(Xk(2)-2.0)*(Xk(2)-2.0));
+    gk = [0.6*0.6 - ((Xk(1)-2.0)*(Xk(1)-2.0)+(Xk(2)-2.0)*(Xk(2)-2.0));
           0.5*0.5 - ((Xk(1)-3.0)*(Xk(1)-3.0)+(Xk(2)-1.0)*(Xk(2)-1.0));
-          0.4*0.4 - ((Xk(1)-4.0)*(Xk(1)-4.0)+(Xk(2)-2.0)*(Xk(2)-2.0));
+          0.6*0.6 - ((Xk(1)-4.0)*(Xk(1)-4.0)+(Xk(2)-2.0)*(Xk(2)-2.0));
           -Xk(2)-0;
            Xk(3)-deg2rad(30);
           -Xk(3)-deg2rad(30)];
@@ -119,8 +119,16 @@ u_opt = reshape(w_opt,[params.nu,params.N]);
 figure();
 plot(u_opt');
 x_opt = params.x0;
+Jr = 0.0;
+
 for k=0:(params.N-1)
     Fk = F('x0',x_opt(:,end), 'p', u_opt(:,k+1));
+    if k==(params.N-1)
+        Jrk = qf(full(Fk.xf));
+    else
+        Jrk = Fk.qf;
+    end
+    Jr = Jr + full(Jrk);
     x_opt = [x_opt, full(Fk.xf)];
 end
 figure(2000);
@@ -133,7 +141,7 @@ legend('x1','x2','x3','x4');
 %%
 Obstacles = [2.0 3.0 4.0;
              2.0 1.0 2.0;
-             0.4 0.5 0.4];
+             0.6 0.5 0.6];
 figure(2000);
 plot_obstacle(Obstacles, 2000);hold on;
 plot(params.x0(1), params.x0(2), 'kp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;

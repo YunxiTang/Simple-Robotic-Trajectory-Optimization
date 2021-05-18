@@ -8,7 +8,7 @@ classdef cmsddp_solver < handle
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
         gamma = 0.1,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        beta = 0.5,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = []    % store real costs
         u_perturb = [],% constrol noise
@@ -31,7 +31,7 @@ classdef cmsddp_solver < handle
             obj.Mu = cell(obj.M,1);
             obj.Lambda = cell(obj.M, 1);
             for k = 1:obj.M
-                obj.Mu{k} = 5 * ones(constraint.n_ineq, obj.L);
+                obj.Mu{k} = 1 * ones(constraint.n_ineq, obj.L);
                 obj.Lambda{k} = zeros(constraint.n_ineq, obj.L);
             end
         end
@@ -188,14 +188,12 @@ classdef cmsddp_solver < handle
                     x0 = xbar{i}(:,1);
                 else
                     %%% Method 1: From Crocoddyl
-                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+%                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
                     
                     %%% Method 2: From Control Toolbox of ETHz
-                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-                    fx = (fx_pre * 2) / 2;
-                    fu = (fu_pre * 2) / 2;
+                    [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-%                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + dft(:,i-1);
+                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -207,7 +205,7 @@ classdef cmsddp_solver < handle
             % backward propogation
             success = 1;
             % dV: tocompute the expected cost reduction
-            dV = 0.0;
+            dV = [0.0,0.0];
             % initialize Vx, Vxx, du, K
             Vx = cell(obj.M, 1);
             Vxx = cell(obj.M, 1);
@@ -246,9 +244,9 @@ classdef cmsddp_solver < handle
                     lambda_ij = obj.Lambda{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Qcms_info(rbt,cst,obj.Constraint,lambda_ij,Imu_ij,x_ij,u_ij,Vx_ij,Vxx_ij,params,obj.iter);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qcms_info(rbt,cst,obj.Constraint,lambda_ij,Imu_ij,x_ij,u_ij,Vx_ij,Vxx_ij,params,obj.iter);
                     % regularization
-                    Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                    Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
                     [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                     if FLAG ~= 0 
@@ -268,10 +266,10 @@ classdef cmsddp_solver < handle
                         ub = params.umax * ones(params.nu, 1);
                         lower = lb - u_ij;
                         upper = ub - u_ij;
-                        [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
+                        [kff,~,R,free] = boxQP(Quu_reg, Qu, lower, upper);
                         kfb = zeros(params.nu, params.nx);
                         if any(free)
-                            Lfree = -R\(R'\Qux(free,:));
+                            Lfree = -R\(R'\Qux_hat(free,:));
                             kfb(free,:) = Lfree;
                         end
                     else
@@ -279,19 +277,18 @@ classdef cmsddp_solver < handle
                         % more numerical stable
                         [R, ~] = chol(Quu_reg);
                         kff = -R\(R'\Qu);
-                        kfb = -R\(R'\Qux);
-%                         kff = -Quu_reg\Qu;
-%                         kfb = -Quu_reg\Qux;
+                        kfb = -R\(R'\Qux_hat);
                     end
                     du{i}(:,j) = kff;
                     K{i}(:,:,j) = kfb;
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
                     Vxx{i}(:,:,j) = Qxx + Qxu*kfb + kfb'*Qux + kfb'*Quu*kfb;
-                    alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-                    dV = alpha * delta1 + 1/2*alpha^2*delta2;
+                    dV(1) = dV(1) + delta1;
+                    dV(2) = dV(2) + 1/2*delta2;
                 end
+                
                 if success == 0
                     break
                 end
@@ -301,11 +298,10 @@ classdef cmsddp_solver < handle
             end
         end
         
-        function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,dV,rbt,cst,params)
+        function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,DV,rbt,cst,params)
             % Check the Forward Pass is accepted or not (IMPORTANT!!!)
             % if not, adjust the line-search factor  (Armijo backtracking
             % line search)
-            
             V = 0;
             obj.eps = 1.0;
             alpha = obj.eps;
@@ -313,10 +309,11 @@ classdef cmsddp_solver < handle
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
+                dV = alpha * DV(1) + alpha^2 * DV(2);
                 ratio = (V - Vprev)/(dV);
                 if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
-                          alpha,V-Vprev, obj.gamma*dV,ratio);
+                          alpha,V-Vprev, obj.gamma*dV, ratio);
                 end
                 if dV < 0 && V < Vprev + obj.gamma * dV
                     break
