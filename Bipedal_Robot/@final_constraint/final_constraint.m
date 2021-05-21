@@ -2,7 +2,7 @@ classdef final_constraint < handle
     %FINAL_CONSTRAINT final_state_constraint here
     
     properties
-        delta = 0.01,
+        delta = 0.001,
         mu = 500,
         t = 1
     end

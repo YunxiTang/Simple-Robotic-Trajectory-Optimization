@@ -14,6 +14,7 @@ uref = usol.usol;
 Kref = Ksol.Ksol;
 
 %% Build a robot
+% planar_quad = me_planar_quadrotor();
 planar_quad = planar_quadrotor();
 params.dt = .01;
 params.T  = 5.0;
@@ -50,12 +51,12 @@ Obstacles = [2.0 3.0 4.0;
              0.6 0.5 0.6];
 figure(2000);
 k = 25;
-plot_obstacle(Obstacles-[0 0 0;0 0 0;0.01 0.01 0.01], 2000);
+plot_obstacle(Obstacles-[0 0 0;0 0 0;0.00 0.00 0.00], 2000);
 draw_circle(params.x0(1), params.x0(2),0.1/3);
 hold on;
 % plot(params.x0(1), params.x0(2), 'bp', 'MarkerFaceColor', 'b', 'MarkerSize', 15); hold on;
 plot(params.xf(1), params.xf(2), 'rh', 'MarkerFaceColor', 'r', 'MarkerSize', 15); hold on;
-plot(x_hist(1,:), x_hist(2,:),'--','LineWidth',2.0);
+plot(x_hist(1,:), x_hist(2,:),'-.','LineWidth',2.0);
 hold on;
 
 figure(1);

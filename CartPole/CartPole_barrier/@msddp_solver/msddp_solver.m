@@ -296,6 +296,12 @@ classdef msddp_solver < handle
                 % Else, do backtracking
                 obj.eps = obj.beta * obj.eps;
             end
+            if alpha <= 1e-5
+                V = Vprev;
+                x = xbar;
+                u = ubar;
+                ratio = 1;
+            end
             obj.J_pushback(V);
             obj.Jreal_pushback(Vr);
             obj.Rate_pushback(ratio);
@@ -344,7 +350,7 @@ classdef msddp_solver < handle
                     break
                 end
                 obj.Update_iter();
-                if mod(obj.iter, 1)==0
+                if  V_change <= 1e-3 %mod(obj.iter, 1)==0
                     path_constraint.update_t();
                     final_constraint.update_t();
                 end
