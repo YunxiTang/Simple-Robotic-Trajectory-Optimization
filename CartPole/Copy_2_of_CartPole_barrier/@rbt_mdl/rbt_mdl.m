@@ -39,9 +39,36 @@ classdef rbt_mdl < handle
            q_next = q + dt/6*(k1+2*k2+2*k3+k4);
         end
         
+        function [fx,fu] = getLinSys(obj, q, u, dt)
+           if nargin < 4
+               [fx,fu] = obj.AnaLinSys(q,u,dt);
+           else
+               [fx,fu] = FDM(obj,q,u,dt);
+           end
+        end
+        
+        function [fx,fu] = FDM(obj,qbar,ubar,dt)
+            dh = 1e-4;
+            Nx = numel(qbar);
+            Nu = numel(ubar);
+            Jx = zeros(Nx,Nx);
+            Ju = zeros(Nx,Nu);
+            Hx = eye(Nx) * dh;
+            Hu = eye(Nu) * dh;
+            for i=1:Nx
+                Jx(:,i) = (obj.rk(qbar + Hx(:,i), ubar, dt) - obj.rk(qbar - Hx(:,i), ubar, dt)) / (2*dh);
+            end
+
+            for i=1:Nu
+                Ju(:,i) = (obj.rk(qbar, ubar+ Hu(:,i), dt) - obj.rk(qbar , ubar - Hu(:,i), dt)) / (2*dh);
+            end
+            fx = Jx;
+            fu = Ju;
+        end
+        
     end
     methods (Static)
-        [fx,fu] = getLinSys(in1,in2,dt);
+        [fx,fu] = AnaLinSys(in1,in2,dt);
     end
 end
 

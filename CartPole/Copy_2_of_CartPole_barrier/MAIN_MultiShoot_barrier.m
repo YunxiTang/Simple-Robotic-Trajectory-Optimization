@@ -1,10 +1,9 @@
 %%% Multiple shooting SLQ for free robot dynamics
 %%% Y.X TANG (yxtang@mae.cuhk.edu.hk BMT LAB, CUHK)
-run('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\CartPole\CartPole_ms_constrained\MAIN_CMShoot.m');
+% run('D:\TANG Yunxi\Motion Planning Locomotion\motion_planning\CartPole\CartPole_ms_constrained\MAIN_CMShoot.m');
 clc;
 clear;
 close all;
-
 
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%%%%%    Date  %%%%%%%%%%
@@ -31,7 +30,7 @@ params.umax             = 25;
 params.umin             = -25;
 params.Debug = 1;           % 1 -> show details
 params.plot = 1;            % 1 -> show plots during optimization
-params.Max_iter = 500;
+params.Max_iter = 20;
 params.stop = 1e-6;
 params.qp = 0;
 params.warm_start = 1;
@@ -55,7 +54,7 @@ end
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%%
 
 %%% build a robot
-cart = rbt_mdl();
+rbt = rbt_mdl();
 % cost model
 cost = cst_mdl(params.Q,params.R,params.Qf,params.Rf);
 %%% wrap up the constraints as a whole function handle
@@ -64,15 +63,21 @@ path_constraint_func = @(x,u)([u(1)-params.umax;
                                params.umin- u(1);
                                x(2)-1.5*pi;
                                -1.5*pi-x(2);
-                               x(1)-0.8;
-                               -0.8-x(1)]); % <= 0
+                               x(1)-0.7;
+                               -0.7-x(1)]); % <= 0
 Npath_Nineq = numel(path_constraint_func(params.x0, zeros(params.nu,1)));
 
+% bnd constraint function
 final_constraint_func = @(xf)([xf(1)-params.xf(1);
                                params.xf(1)-xf(1);
                                xf(2)-params.xf(2);
                                params.xf(2)-xf(2)]); % < 0
 Nfinal_Nineq = numel(final_constraint_func(params.xf));
+
+% cost function
+obj_path_func = @(x, u, xref, uref) (1/2*(x-xref).'*params.Q*(x-xref) + 1/2*(u-uref).'*params.R*(u-uref)) * params.dt;
+obj_bnd_func = @(x) 1/2*(x-params.xf).'*params.Qf*(x-params.xf);                                
+
 % create constraint objects
 path_cons = path_constraint(Npath_Nineq);
 final_cons = final_constraint(Nfinal_Nineq);
@@ -80,9 +85,12 @@ final_cons = final_constraint(Nfinal_Nineq);
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Function Setup %%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
-Setup_Functions_barrier(params, cart, cost, path_constraint_func, final_constraint_func);
+[success] = Setup_Functions_barrier(rbt,...
+                                    path_constraint_func, final_constraint_func, ...
+                                    obj_path_func, obj_bnd_func, ...
+                                    params);
 
-
+%% ................................................................
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Call Solver %%%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%%%
@@ -90,7 +98,7 @@ solver = msddp_solver(params);
 
 %% Solve ................................
 tstart = tic;
-[xsol, usol, Ksol] = solver.Solve(cart,cost,path_cons,final_cons,params);
+[xsol, usol, Ksol] = solver.Solve(rbt,cost,path_cons,final_cons,params);
 telapsed = toc(tstart)
 
 J_hist = solver.Jstore;
