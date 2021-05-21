@@ -26,15 +26,32 @@ classdef final_constraint < handle
         end
         
         function Penalty = penalty(obj, x)
+            % qudratic extension of RLB
             cons_value = obj.final_c(x);
             Nc = obj.N_ineq;
             pent = zeros(Nc, 1);
             for i=1:Nc
-                if -cons_value(i) > obj.delta
-                    pent(i) = 1/obj.t * (-log(-cons_value(i)));
+                h = -cons_value(i);
+                if h > obj.delta
+                    pent(i) = 1/obj.t * (-log(h));
                 else
-                    h = cons_value(i);
-                    pent(i) = 1/obj.t * (1/2*(((-h-2*obj.delta)/obj.delta).^2-1)-log(obj.delta));
+                    pent(i) = 1/obj.t * (1/2*(((h-2*obj.delta)/obj.delta).^2-1)-log(obj.delta));
+                end
+            end
+            Penalty = sum(pent);
+        end
+        
+        function Penalty = e_penalty(obj, x)
+            % expential extension of RLB
+            cons_value = obj.final_c(x);
+            Nc = obj.N_ineq;
+            pent = zeros(Nc, 1);
+            for i=1:Nc
+                h = -cons_value(i);
+                if h > obj.delta
+                    pent(i) = 1/obj.t * (-log(h));
+                else
+                    pent(i) = 1/obj.t * (exp(1-h/obj.delta)-1-log(obj.delta));
                 end
             end
             Penalty = sum(pent);
@@ -43,14 +60,14 @@ classdef final_constraint < handle
         function [Penal, Penal_x, Penal_xx] = penalty_info(obj, x)
             C = obj.final_c(x);
             Penal = obj.penalty(x);
-            Nc = length(C);
+            Nc = obj.N_ineq;
             Nx = numel(x);
             Penal_x = zeros(Nx, 1);
             Penal_xx = zeros(Nx, Nx);
             Cx = obj.final_cx(x);
             for i=1:Nc
                 Ci = C(i);
-                if -C(i) > obj.delta
+                if -Ci > obj.delta
                     Penal_x = Penal_x + 1/obj.t * (- 1 / Ci * Cx(i,:)');
                     Penal_xx = Penal_xx + 1/obj.t * 1 / (Ci^2) * Cx(i,:)'*Cx(i,:);
                     
@@ -61,7 +78,29 @@ classdef final_constraint < handle
                 end
             end
         end
+        
+        function [Penal, Penal_x, Penal_xx] = e_penalty_info(obj, x)
+            C = obj.final_c(x);
+            Penal = obj.e_penalty(x);
+            Nc = obj.N_ineq;
+            Nx = numel(x);
+            Penal_x = zeros(Nx, 1);
+            Penal_xx = zeros(Nx, Nx);
+            Cx = obj.final_cx(x);
+            for i=1:Nc
+                Ci = C(i);
+                if -Ci > obj.delta
+                    Penal_x = Penal_x + 1/obj.t * (- 1 / Ci * Cx(i,:)');
+                    Penal_xx = Penal_xx + 1/obj.t * 1 / (Ci^2) * Cx(i,:)'*Cx(i,:);    
+                else
+                    Penal_x = Penal_x + 1/obj.t * (exp(1-(-Ci/obj.delta) * 1/obj.delta) * Cx(i,:)');
+                    Penal_xx = Penal_xx + 1/obj.t * exp(1-(-Ci/obj.delta) * 1/obj.delta^2) * Cx(i,:)' * Cx(i,:);
+                end
+            end
+        end
     end
+    
+    
     
     methods (Static)
         % compute constraint

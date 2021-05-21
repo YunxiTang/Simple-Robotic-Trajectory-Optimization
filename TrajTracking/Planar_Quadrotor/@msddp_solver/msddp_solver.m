@@ -7,8 +7,8 @@ classdef msddp_solver < handle
         Reg = 0.0,     % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
-        gamma = 0.1,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        gamma = 0.01,   % threshold to accept a FW step
+        beta = 0.1,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = []    % store real costs
     end
@@ -143,12 +143,12 @@ classdef msddp_solver < handle
                     x0 = xbar{i}(:,1);
                 else
                     %%% Method 1: From Crocoddyl
-                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+%                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
                     
                     %%% Method 2: From Control Toolbox of ETHz
-%                     [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-%                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-%                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
+                    [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
+                    tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * (obj.eps) *du{i-1}(:,end);
+                    x0 = xbar{i}(:,1) +   (tilda) + obj.eps * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -193,7 +193,7 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Q_info(rbt,cst,x_ij,u_ij,xref_ij,uref_ij,Vx_ij,Vxx_ij,params);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qms_info(rbt,cst,x_ij,u_ij,xref_ij,uref_ij,Vx_ij,Vxx_ij,params,gap);
                     % regularization
                     Quu_reg = Quu + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
@@ -226,7 +226,7 @@ classdef msddp_solver < handle
                         % more numerical stable
                         [R, ~] = chol(Quu_reg);
                         kff = -R\(R'\Qu);
-                        kfb = -R\(R'\Qux);
+                        kfb = -R\(R'\Qux_hat);
 %                         kff = -Quu_reg\Qu;
 %                         kfb = -Quu_reg\Qux;
                     end
@@ -264,7 +264,7 @@ classdef msddp_solver < handle
                 end
                 if dV < 0 && V < Vprev + obj.gamma * dV
                     break
-                elseif dV >= 0 && V < Vprev + 2 * dV
+                elseif dV >= 0 && V < Vprev + 5 * dV
                     break
                 end
                 % Else, do backtracking
@@ -274,7 +274,6 @@ classdef msddp_solver < handle
                 V = Vprev;
                 x = xbar;
                 u = ubar;
-                ratio = 1;
             end
             obj.J_pushback(V);
             if params.plot == 1 && mod(obj.iter,2) == 0
@@ -319,8 +318,9 @@ classdef msddp_solver < handle
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,params);
                 obj.Update_iter();
                 [dft] = obj.CalDefect(xbar,params);
-                change = abs(Vprev - Vbar);
-                if change < params.stop 
+                change = (Vprev - Vbar);
+                norm(dft)
+                if change < params.stop && norm(dft) < 1e-9
                     break
                 end
             end

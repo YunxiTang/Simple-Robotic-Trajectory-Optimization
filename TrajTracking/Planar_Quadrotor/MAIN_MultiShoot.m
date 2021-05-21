@@ -15,9 +15,9 @@ log = 0;
 params.dt               = tref(2) - tref(1);
 params.T                = tref(end);
 params.N                = size(xref, 2);
-params.shooting_phase   = 1000;
+params.shooting_phase   = 500;
 params.L                = (params.N - 1) / params.shooting_phase + 1;
-params.x0               = [0.0;3.5;1.9;0.0;0.2;0.0];
+params.x0               = [0.0;3.5;0.2;0.0;0.2;0.0];
 params.nx               = numel(xref(:,1));
 params.nu               = numel(uref(:,1));
 %% post-process reference trajectory
@@ -54,8 +54,8 @@ params.umax             = 15.0;
 params.umin             = 0.01;
 params.Debug            = 1;     % 1 -> show details
 params.plot             = 0;     % 1 -> show plots during optimization
-params.Max_iter         = 1000;
-params.stop             = 1e-5;
+params.Max_iter         = 500;
+params.stop             = 1e-9;
 params.qp               = 1;
 params.clamp            = 0;
 nt                      = params.T / params.shooting_phase;
@@ -92,7 +92,7 @@ plot(solver.Jstore,'b-o','LineWidth',2.0);
 J_hist = solver.Jstore;
 
 figure(666);
-plot(tref, xsol(3,:),'LineWidth',2.0);
+plot(tref, xsol(4:6,:),'LineWidth',2.0);
 
 figure(999);
 plot(xsol(1,:), xsol(2,:),'r--','LineWidth',2.0); hold on;
@@ -102,7 +102,7 @@ grid on;
 figure(1000);
 subplot(2,1,1);
 yyaxis left
-p1=plot(tref(1:end-1), usol(1,:),'Color',[0.8 0 0.0],'LineWidth',2.0);hold off;
+p1=stairs(tref(1:end-1), usol(1,:),'Color',[0.8 0 0.0],'LineWidth',2.0);hold off;
 ylabel('$u_1$','Interpreter','latex','FontSize',15);
 yyaxis right
 % for kk=1:size(Ksol,2)-2  
@@ -115,7 +115,7 @@ grid on;
 
 subplot(2,1,2);
 yyaxis left
-plot(tref(1:end-1), usol(2,:),'Color',[0 0 0.8],'LineWidth',2.0);hold off;
+stairs(tref(1:end-1), usol(2,:),'Color',[0 0 0.8],'LineWidth',2.0);hold off;
 ylabel('$u_2$','Interpreter','latex','FontSize',15);
 % for kk=1:size(Ksol,2)-2
 %     yyaxis right

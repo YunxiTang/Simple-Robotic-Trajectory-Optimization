@@ -184,9 +184,9 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu] = cst.Q_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qms_info(rbt,cst,x_ij,u_ij,Vx_ij,Vxx_ij,params,gap);
                     % regularization
-                    Quu_reg = Quu + eye(params.nu)*obj.Reg;
+                    Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
                     [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
                     while FLAG ~= 0 
@@ -209,7 +209,7 @@ classdef msddp_solver < handle
                         [kff,result,R,free] = boxQP(Quu_reg, Qu, lower, upper);
                         kfb = zeros(params.nu, params.nx);
                         if any(free)
-                            Lfree = -R\(R'\Qux(free,:));
+                            Lfree = -R\(R'\Qux_hat(free,:));
                             kfb(free,:) = Lfree;
                         end
                     else
@@ -217,7 +217,7 @@ classdef msddp_solver < handle
                         % more numerical stable
                         [R, ~] = chol(Quu_reg);
                         kff = -R\(R'\Qu);
-                        kfb = -R\(R'\Qux);
+                        kfb = -R\(R'\Qux_hat);
 %                         kff = -Quu_reg\Qu;
 %                         kfb = -Quu_reg\Qux;
                     end
