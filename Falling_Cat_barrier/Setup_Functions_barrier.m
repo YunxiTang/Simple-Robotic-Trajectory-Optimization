@@ -6,6 +6,7 @@ function [success] = Setup_Functions_barrier(params,rbtmdl,cstmdl,path_constrain
 %%% cstmdl           class            cost model
 %%% success          int              1/0 (0->ERROR)
 success = 1;
+alpha = 1e-2;
 nx = params.nx;                         % dimension of state
 nu = params.nu;                         % dimension of input
 u = sym('u',[nu 1]','real');            % symbolic variable: control
@@ -35,7 +36,8 @@ matlabFunction(final_c,  'vars', {x}, 'file', '@final_constraint/final_c',  'opt
 matlabFunction(final_cx, 'vars', {x}, 'file', '@final_constraint/final_cx', 'optimize',1==1);
 
 % stage cost
-l = 1/2*(x-xref).'*Q*(x-xref) + 1/2*(u-uref).'*R*(u-uref);
+l = sqrt((x-xref).'*Q*(x-xref)+alpha^2)-alpha  + 1/2*(u-uref).'*R*(u-uref);
+% l = 1/2*(x-xref).'*Q*(x-xref) + 1/2*(u-uref).'*R*(u-uref);
 l = l * dt;
 lf = 1/2*(x-xf).'*Qf*(x-xf);
 

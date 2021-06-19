@@ -2,14 +2,15 @@
 %%% Y.X TANG (yxtang@mae.cuhk.edu.hk BMT LAB, CUHK)
 clear;
 clc;
+close all;
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 %%% Parameters %%%%%%%%%%%
 %%%%%%%%%%%%%%%%%%%%%%%%%%
 params.dt    = .01;
 params.T     = 2;
 params.N     = params.T / params.dt;
-params.x0    = [ 0.0;2.0;0.0;0.0];
-params.xf    = [ 0.0;2.0;pi/2;0.0];
+params.x0    = [ 0.0;0.0;0.0;0.0];
+params.xf    = [ 5.0;2.0;pi/2;0.0];
 params.nx    = numel(params.x0);
 params.nu    = 2;
 params.Q     = diag([0.1 0.1 0.1 0.1])*1;
@@ -21,7 +22,7 @@ params.Rf    = eye(params.nu);
 params.Reg_Type = 2;  % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 5.0;
 params.umin  = -5.0;
-params.Debug = 0;     % 1 -> show details
+params.Debug = 1;     % 1 -> show details
 params.plot = 1;      % 1 -> show plots during optimization
 params.Max_iter = 5000;
 params.stop = 1e-6;

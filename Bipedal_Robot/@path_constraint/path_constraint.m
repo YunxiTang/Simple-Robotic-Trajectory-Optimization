@@ -19,7 +19,7 @@ classdef path_constraint < handle
         end
         
         function [] = update_t(obj)
-            obj.t = obj.t + obj.mu; 
+            obj.t = obj.t * 10; 
             obj.delta = obj.delta / 1.0001;
         end
         

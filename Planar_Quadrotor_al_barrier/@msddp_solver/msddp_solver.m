@@ -4,7 +4,7 @@ classdef msddp_solver < handle
     properties
         M,                  % shooting phase
         L,                  % length of shooting phase
-        Reg = 1e-3,         % how much to regularize
+        Reg = 0.1,         % how much to regularize
         Reg_Type = 1,       % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,          % eps: line-search parameter  
         gamma = 0.1,        % threshold to accept a FW step
@@ -145,7 +145,7 @@ classdef msddp_solver < handle
             u = cell(obj.M, 1);
             J = 0;
             [dft] = obj.CalDefect(xbar,params);
-            new_dft = (1 - obj.eps) .* dft;
+%             new_dft = (1 - obj.eps) .* dft;
             
             for k = 1:obj.M
                 x{k} = 0 * xbar{k};
@@ -162,7 +162,7 @@ classdef msddp_solver < handle
                     %%% Method 2: From Control Toolbox of ETHz
                     [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end), params.dt);
                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + obj.eps * dft(:,i-1);
+                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,path_constraint,final_constraint,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -320,7 +320,7 @@ classdef msddp_solver < handle
                     fprintf('[INFO]: Iteration %3d   ||  Cost %.12e \n',obj.iter,Vbar);
                 end
                 % Set regularization back to 0 for next backward pass
-                obj.Reg = 1e-3;
+                obj.Reg = 0.1;
                 
                 %%% Forward Pass
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,path_constraint,final_constraint,params);
@@ -333,12 +333,12 @@ classdef msddp_solver < handle
                 if (change) < params.stop && obj.iter > 5
                     fprintf('[INFO]: Value Function Converge. \n');
                     break
-                elseif norm((DU)) < 1e-2
+                elseif norm((DU)) < 1e-3
                     fprintf('[INFO]: Action Function Converge. \n');
                     break  
                 end
                 obj.Update_iter();
-                if mod(obj.iter, 1)==0
+                if mod(obj.iter, 2)==0
                     path_constraint.update_t();
                     final_constraint.update_t();
                 end

@@ -56,7 +56,7 @@ classdef Acrobot < handle
                 G = [G1;G2];
                 F = 1.0*[obj.b1 0;
                          0 obj.b2];
-                B = [0;1];
+                B = [1;0];
         end
         
         function dxdt = Dynamics(obj,t,x,u)

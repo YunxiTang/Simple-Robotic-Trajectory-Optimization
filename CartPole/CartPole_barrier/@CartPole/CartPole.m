@@ -41,7 +41,7 @@ classdef CartPole < handle
         
     end
     methods (Static)
-        [fx,fu] = getLinSys(in1,in2,dt);
+        [fx,fu,fxx,fuu,fux,fxu] = getLinSys(in1,in2,dt);
     end
 end
 

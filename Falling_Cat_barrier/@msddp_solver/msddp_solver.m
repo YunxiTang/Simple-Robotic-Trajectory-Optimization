@@ -145,7 +145,7 @@ classdef msddp_solver < handle
             u = cell(obj.M, 1);
             J = 0;
             [dft] = obj.CalDefect(xbar,params);
-            new_dft = (1 - obj.eps) .* dft;
+            new_dft = (1 - min(obj.eps,0.8)) .* dft;
             
             for k = 1:obj.M
                 x{k} = 0 * xbar{k};

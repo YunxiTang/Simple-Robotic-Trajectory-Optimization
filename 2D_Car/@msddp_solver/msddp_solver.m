@@ -7,8 +7,8 @@ classdef msddp_solver < handle
         Reg = 0.0,     % how much to regularize
         Reg_Type = 1,  % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,     % eps: line-search parameter  
-        gamma = 0.1,   % threshold to accept a FW step
-        beta = 0.8,    % for line-search backtracking
+        gamma = 0.01,   % threshold to accept a FW step
+        beta = 0.1,    % for line-search backtracking
         iter = 0,      % count iterations
         Jstore = []    % store real costs
     end
@@ -128,14 +128,14 @@ classdef msddp_solver < handle
                     x0 = xbar{i}(:,1);
                 else
                     %%% Method 1: From Crocoddyl
-                    % x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
                     
                     %%% Method 2: From Control Toolbox of ETHz
-                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-                    fx = (fx_pre * 2) / 2;
-                    fu = (fu_pre * 2) / 2;
-                    tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
+%                     [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
+%                     fx = (fx_pre * 2) / 2;
+%                     fu = (fu_pre * 2) / 2;
+%                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
+%                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -256,10 +256,10 @@ classdef msddp_solver < handle
             [dV,Vx,Vxx,du,K,success] = obj.BackwardPass(rbt,cst,xbar,ubar,dft,params);
             
             %%% run a forward iteration
-            if params.shooting_phase > 1
-                % avoid closing gap at first iteration
-                obj.eps = 0.9;
-            end
+%             if params.shooting_phase > 1
+%                 % avoid closing gap at first iteration
+%                 obj.eps = 0.9;
+%             end
             [Vbar,xbar,ubar] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
             obj.Update_iter();
             [dft] = obj.CalDefect(xbar,params);
@@ -280,7 +280,7 @@ classdef msddp_solver < handle
                 obj.Update_iter();
                 [dft] = obj.CalDefect(xbar,params);
                 change = Vprev - Vbar;
-                if change < params.stop 
+                if (change) < params.stop 
                     break
                 end
             end

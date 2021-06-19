@@ -4,7 +4,7 @@ classdef msddp_solver < handle
     properties
         M,                  % shooting phase
         L,                  % length of shooting phase
-        Reg = 1e-3,         % how much to regularize
+        Reg = 0.01,         % how much to regularize
         Reg_Type = 1,       % 1->reg Quu (Default) / 2->reg Vxx
         eps = 1.0,          % eps: line-search parameter  
         gamma = 0.001,        % threshold to accept a FW step
@@ -311,7 +311,7 @@ classdef msddp_solver < handle
                     fprintf('[INFO]: Iteration %3d   ||  Cost %.12e \n',obj.iter,Vbar);
                 end
                 % Set regularization back to 0 for next backward pass
-                obj.Reg = 1e-3;
+                obj.Reg = 0.01;
                 %%% Forward Pass
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,path_constraint,final_constraint,params);
                 
@@ -328,7 +328,7 @@ classdef msddp_solver < handle
                     break
                 end
                 obj.Update_iter();
-                if mod(obj.iter, 1)==0
+                if mod(obj.iter, 2)==0
                     path_constraint.update_t();
                     final_constraint.update_t();
                 end

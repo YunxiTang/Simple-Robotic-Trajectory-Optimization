@@ -6,6 +6,7 @@ function [success] = Setup_Functions(params,rbtmdl,cstmdl)
 %%% cstmdl           class            cost model
 %%% success          int              1/0 (0->ERROR)
 success = 0;
+alpha = 1e-5;
 nx = params.nx;
 nu = params.nu;
 u = sym('u',[nu 1]','real');
@@ -20,9 +21,9 @@ Qf = cstmdl.Qf;
 %%% write cost function (any form) here
 %%% introduce relax-log barrier function later
 
-l = 1/2*(x-xf).'*Q*(x-xf) + 1/2*u.'*R*u;
+l = sqrt((x).'*Q*(x)+alpha^2)-alpha + 0.5 * u.'*R*u;
 l = l * dt;
-lf = 1/2*(x-xf).'*Qf*(x-xf);
+lf = sqrt((x-xf).'*Qf*(x-xf)+alpha^2)-alpha;
 
 
 %%% compute derivatives of cost function

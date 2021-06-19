@@ -57,10 +57,10 @@ function visualize(q, r0, step_number, rbt)
     % generalized coordinate q = [q1, q2, q3]:
     lw = 3;
     % links
-    plot([x0, x_h], [z0, z_h], 'linewidth', lw); 
+    plot([x0, x_h], [z0, z_h],'color', 'r', 'linewidth', lw); 
     hold on
-    plot([x_h, x_t], [z_h, z_t], 'linewidth', lw+2); 
-    plot([x_h, x_swf], [z_h, z_swf], 'linewidth', lw);
+    plot([x_h, x_t], [z_h, z_t],'color', 'm', 'linewidth', lw+2); 
+    plot([x_h, x_swf], [z_h, z_swf],'color', 'b', 'linewidth', lw);
     % plot a line for "ground"
     plot([-1 + x_h, 1 + x_h], [0, 0], 'color', 'black','linewidth', lw-1);
     axis 'square'
@@ -75,9 +75,9 @@ function visualize(q, r0, step_number, rbt)
     plot([x_h - F / 200, x_h], [z_h, z_h], 'linewidth', 2 * lw, 'color', 'r')
     % point masses
     mz = 40;
-    plot(x1, z1, '.', 'markersize', mz); 
+    plot(x1, z1, 'k.', 'markersize', mz); 
     plot(x_h, z_h, 'k.', 'markersize', mz/1.1);
     hold on
-    plot(x2, z2, '.', 'markersize', mz); 
-    plot(x3, z3, '.', 'markersize', mz);
+    plot(x2, z2, 'k.', 'markersize', mz); 
+    plot(x3, z3, 'k.', 'markersize', mz);
 end

@@ -2,9 +2,9 @@ classdef final_constraint < handle
     %FINAL_CONSTRAINT final_state_constraint here
     
     properties
-        delta = 0.005,
-        mu = 100,
-        t = 10,
+        delta = 0.0001,
+        mu = 200,
+        t = 100,
         N_ineq = 0
     end
     
@@ -21,8 +21,8 @@ classdef final_constraint < handle
         end
         
         function [] = update_t(obj)
-            obj.t = obj.t + obj.mu; 
-            obj.delta = max(obj.delta / 1.1,1e-5);
+            obj.t = min(obj.t + obj.mu, 1e4); 
+            obj.delta = max(obj.delta / 1.001,1e-5);
         end
         
         function Penalty = penalty(obj, x)

@@ -44,20 +44,20 @@ Obstacles = [2.0 3.0 4.0;
 %% 
 figure(1);
 plot_obstacle(Obstacles, 1);
-h1=plot(x_al(1,1), x_al(2,1), 'mx', 'LineWidth', 5.0); hold on;
-h2=plot(1.0, 1.5, 'gx', 'LineWidth', 5.0); hold on;
-h3=plot(x_al(1,:), x_al(2,:), 'k-.','LineWidth',2.0); hold on;
-h4=plot(x_rlb(1,:), x_rlb(2,:), 'r-','LineWidth',2.0); hold on;
-h5=plot(x_ss(1,:), x_ss(2,:), 'b-.', 'LineWidth',2.0); hold on;
-h6=plot(x_dir(1,:), x_dir(2,:), 'Color','#7E2F8E', 'LineStyle', '-.','LineWidth',2.0);hold on;
+h1=plot(x_al(1,1), x_al(2,1), 'gd', 'LineWidth', 5.0); hold on;
+h2=plot(1.0, 1.5, 'rx', 'LineWidth', 15.0); hold on;
+h3=plot(x_al(1,:), x_al(2,:), 'k-.','LineWidth',3.0); hold on;
+h4=plot(x_rlb(1,:), x_rlb(2,:), 'r-','LineWidth',3.0); hold on;
+h5=plot(x_ss(1,:), x_ss(2,:), 'b-.', 'LineWidth',3.0); hold on;
+h6=plot(x_dir(1,:), x_dir(2,:), 'Color','#7E2F8E', 'LineStyle', '-.','LineWidth',3.0);hold on;
 % h7=plot(x_srlb(1,:), x_srlb(2,:), 'Color','#4DBEEE', 'LineStyle', '-.','LineWidth',2.0);
 % 
 axis equal;
 xlabel('$x[m]$', 'Interpreter', 'latex', 'FontSize', 18, 'FontAngle','italic');
 ylabel('$y[m]$', 'Interpreter', 'latex', 'FontSize', 18, 'FontAngle','italic');
 title('$Planar\;Quadrotor$', 'Interpreter', 'latex', 'FontSize', 20, 'FontAngle','italic');
-ld2 = legend([h1,h2,h3,h4,h5,h6],'$\textbf{x}_0$','$\textbf{x}_f$','$AL$', '$Ours$','$SS$','$DIRCOL$',...
-    'Interpreter','latex', 'FontSize', 14,'NumColumns',2);
+ld2 = legend([h1,h2,h3,h4,h5,h6],'$\textbf{x}_0$','$\textbf{x}_f$','$AL$', '$Ours$','$DSS$','$DIRCOL$',...
+    'Interpreter','latex', 'FontSize', 12,'NumColumns',2);
 set (gcf,'Position',[400,100,500,500], 'color','w');
 % % 
 % figure(2);

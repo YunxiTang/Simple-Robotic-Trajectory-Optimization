@@ -77,11 +77,11 @@ classdef msddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
-                for k=1:params.nu
-                    if abs(ui(k)) > params.umax
-                        ui(k) = sign(ui(k))*params.umax;
-                    end
-                end
+%                 for k=1:params.nu
+%                     if abs(ui(k)) > params.umax
+%                         ui(k) = sign(ui(k))*params.umax;
+%                     end
+%                 end
                 usol(:,i) = ui;
                 
                 % Sum up costs
@@ -135,7 +135,7 @@ classdef msddp_solver < handle
             u = cell(obj.M, 1);
             J = 0;
             [dft] = obj.CalDefect(xbar,params);
-            new_dft = (1 - obj.eps) .* dft;
+            new_dft = (1 - min(obj.eps,0.8)) .* dft;
             
             for k = 1:obj.M
                 x{k} = 0 * xbar{k};
@@ -148,11 +148,11 @@ classdef msddp_solver < handle
                 else
                     %%% Method 1: From Crocoddyl
                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
-                    
+%                     
                     %%% Method 2: From Control Toolbox of ETHz
 %                     [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end), params.dt);
 %                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-% %                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
+%                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -247,7 +247,7 @@ classdef msddp_solver < handle
                 ratio = (V - Vprev)/(dV);
                 if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
-                          alpha,V-Vprev, obj.gamma*dV,ratio);
+                          alpha,V-Vprev, dV,ratio);
                 end
                 if obj.iter == 0
                     break

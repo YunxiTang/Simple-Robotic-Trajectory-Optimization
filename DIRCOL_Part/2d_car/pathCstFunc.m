@@ -17,11 +17,5 @@ function [Cp_ineq,Cp_eq] = pathCstFunc(t, x, u, params)
                             (xi(2)-obstacle(2,j))*(xi(2)-obstacle(2,j)));
         end
     end
-%     for i=1:nTimes
-%         xi = x(:,i);
-%         Cp_ineq(:,i) = [0.5*0.5 - ((xi(1)-0.0)*(xi(1)-0.0) + (xi(2)-1.0)*(xi(2)-1.0));
-%                         0.6*0.6 - ((xi(1)-1.3)*(xi(1)-1.3) + (xi(2)-1.3)*(xi(2)-1.3));
-%                         0.4*0.4 - ((xi(1)-2.0)*(xi(1)-2.0) + (xi(2)-2.5)*(xi(2)-2.5))];
-%     end
 end
 

@@ -16,22 +16,25 @@ params.T                =  3.0;
 params.N                = params.T / params.dt;
 params.shooting_phase   = 5;
 params.x0               = [0.0;0.0;0.0;0.0];
-params.xf               = [0.0;pi;0.0;0.0];
+params.xf               = [0.0; pi;0.0;0.0];
 params.nx               = numel(params.x0);
 params.nu               = 1;
 params.Q                = diag([1 1 1 1]);
 params.R                = diag([0.1]);
-params.Qf               = diag([5 5 5 5]);
+params.Qf               = diag([5 5 5 5])*1;
 params.Rf               = eye(params.nu);
-params.Reg_Type         = 2;        % 1->reg of Quu  / 2->reg of Vxx
+params.Reg_Type         = 2;               % 1->reg of Quu  / 2->reg of Vxx
 params.umax             = 25;
 params.umin             = -25;
-params.Debug = 1;           % 1 -> show details
-params.plot = 1;            % 1 -> show plots during optimization
-params.Max_iter = 500;
-params.stop = 1e-6;
-params.qp = 0;
-params.warm_start = 1;
+params.Debug            = 1;               % 1 -> show details
+params.plot             = 0;               % 1 -> show plots during optimization
+params.Max_iter         = 5;
+params.stop             = 1e-6;
+params.clamp            = 1;               % 1 -> clamp the control in FP
+params.qp               = 0;               % 1 -> using boxQP in BP
+params.warm_start       = 1;               % 1 -> warm start your solver
+params.full_ddp         = 1;
+
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase
@@ -69,6 +72,7 @@ final_constraint_func = @(xf)([xf(1)-params.xf(1);
                                xf(2)-params.xf(2);
                                params.xf(2)-xf(2)]); % < 0
 Nfinal_Nineq = numel(final_constraint_func(params.xf));
+
 % create constraint objects
 path_cons = path_constraint(Npath_Nineq);
 final_cons = final_constraint(Nfinal_Nineq);
@@ -89,9 +93,15 @@ solver = msddp_solver(params);
 
 %% Solve ................................
 tstart = tic;
-[xsol, usol, Ksol] = solver.Solve(cart,cost,path_cons,final_cons,params);
+[xsol, usol, Ksol, x_rlb, u_rlb] = solver.Solve(cart,cost,path_cons,final_cons,params);
 telapsed = toc(tstart)
 
+
+filename_x = '.\x_rlb';
+save(filename_x,'x_rlb');
+filename_u = '.\u_rlb';
+save(filename_u,'u_rlb');
+solver.iter
 J_hist = solver.Jstore;
 Jr_hist = solver.J_real;
 R_hist = solver.Contract_Rate;
@@ -124,7 +134,7 @@ grid on;
 
 figure(1000);
 yyaxis left
-p1=plot(t(1:end-1), usol(1,:),'Color',[0.8 0 0.0],'LineWidth',2.0);hold off;
+p1=stairs(t(1:end-1), usol(1,:),'Color',[0.8 0 0.0],'LineWidth',2.0);hold off;
 ylabel('$u_1$','Interpreter','latex','FontSize',15);
 yyaxis right
 for kk=1:size(Ksol,2)  
@@ -143,7 +153,15 @@ for m=1:params.N
 end
 figure(3000);
 plot(t(1:end-1),constraint_voilation,'LineWidth',2.0); hold on;
-plot(t(1:end-1),0*constraint_voilation,'k-.','LineWidth',2.0);
+plot(t(1:end-1),0*constraint_voilation,'k-.','LineWidth',2.0);hold off;
+grid on;
+
+%% CONS_VIO
+figure(3001);
+plot(solver.Cons_Vio,'k-o','LineWidth',2.0,'MarkerSize',3);
+ha=gca;
+% set(ha,'yscale','log');
+% set(ha,'xscale','log');
 grid on;
 %%
 %%%% data logging %%%

@@ -2,7 +2,7 @@
 % Solve planar quadrotor obstacle-avoiding problem
 addpath('..\lib\OptimTraj')
 clear; clc;
-%% load the cartpole
+%% load the rbt
 rbt = planar_quadrotor();
 
 %% params for optimization

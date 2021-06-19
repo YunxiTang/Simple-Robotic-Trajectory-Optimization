@@ -14,23 +14,23 @@ log = 0;
 params.dt    = .001;
 params.T     = 0.3;
 params.N     = params.T / params.dt;
-params.shooting_phase = 1;
-params.x0    = [0.3;0.3;0.2;0.0;0.0;0.00;0.0;0.0;0.0;0.0];
+params.shooting_phase = 100;
+params.x0    = [0.3;0.3;0.0;0.0;0.0;0.00;0.0;0.0;0.0;0.0];
 params.xf    = zeros(10,1);
 params.nx    = numel(params.x0);
 params.nu    = 2;
 params.Q     = diag([1;1;1;0.00;0.00;1;1;1;0.00;0.00])*5;
-params.R     = eye(params.nu)*0.001;
+params.R     = eye(params.nu)*0.1;
 params.Qf    = diag([1;1;1;0.00;0.00;1;1;1;0.00;0.00])*6;
 params.Rf    = eye(params.nu);
-params.Reg_Type = 1;        % 1->reg of Quu  / 2->reg of Vxx
+params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 0.5;
 params.umin  = -0.5;
 params.Debug = 1;           % 1 -> show details
 params.plot = 1;            % 1 -> show plots during optimization
 params.Max_iter = 500;
 params.stop = 1e-7;
-params.qp = 0;
+params.qp = 1;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
 for i=1:params.shooting_phase
@@ -53,10 +53,10 @@ path_constraint_func = @(x,u)([ u(1)-0.5;
                                -u(1)-0.5;
                                 u(2)-0.5;
                                -u(2)-0.5;
-                                x(4)-deg2rad(50);
-                               -x(4)-deg2rad(50);
-                                x(5)-deg2rad(40);
-                               -x(5)-deg2rad(40)]); % <= 0
+                                x(4)-deg2rad(40);
+                               -x(4)-deg2rad(40);
+                                x(5)-deg2rad(30);
+                               -x(5)-deg2rad(30)]); % <= 0
 
 % TO DO: add final state constraint here
 final_constraint_func = @(xf)([xf(1)-deg2rad(0);
@@ -108,10 +108,10 @@ grid on;
 subplot(2,1,2);
 plot(t, rad2deg(xsol(4:5,:)),'LineWidth',2.0);hold on;
 % plot(t, rad2deg(xsol(9:10,:)),'LineStyle','-.','LineWidth',2.0);
-plot(t, 50*ones(params.N+1),'k--','LineWidth',2.0);hold on;
-plot(t, -50*ones(params.N+1),'k--','LineWidth',2.0);hold on;
-plot(t, 40*ones(params.N+1),'r--','LineWidth',2.0);hold on;
-plot(t, -40*ones(params.N+1),'r--','LineWidth',2.0);hold on;
+plot(t, 40*ones(params.N+1),'k--','LineWidth',2.0);hold on;
+plot(t, -40*ones(params.N+1),'k--','LineWidth',2.0);hold on;
+plot(t, 30*ones(params.N+1),'r--','LineWidth',2.0);hold on;
+plot(t, -30*ones(params.N+1),'r--','LineWidth',2.0);hold on;
 legend('Tail Yaw', 'Tail Pitch','Interpreter','latex','FontSize',15);
 grid on;
 

@@ -1,17 +1,17 @@
 %%% relaxed barrier function
 clc;
 clear;
-x1 = -1:0.00001:20;
-x2 = 0: 0.00001:20;
-x3 = 0:0.1:20;
+x1 = -1:0.00001:2;
+x2 = 0: 0.00001:2;
+x3 = 0:0.001:2;
 N = length(x1);
 y1 = zeros(N,1);
 for i=1:N
     z = x1(i);
-    y1(i) = 0.2*relaxed_barrier(z, 0.1);
+    y1(i) = relaxed_barrier(z, 0.1);
 end
 
-y2 = 0.2*barrier(x2);
+y2 = barrier(x2);
 y3 = 1 ./ x3;
 
 %%
@@ -22,12 +22,13 @@ plot(x3,y3,'Color',[0.4940 0.1840 0.5560],'LineWidth',3.0); hold on;
 plot(x2,0*x2,'k--','LineWidth',2.0);hold on;
 plot(0*x2,linspace(0,15,numel(x2)),'k--','LineWidth',2.0);hold on;
 
-xlabel('$h$','Interpreter','latex','FontSize',20);
-ylabel('$B(h)$','Interpreter','latex','FontSize',20);
-legend('Relaxed Log Barrier Function($\mu=0.2$,$\delta=0.1$)','Log Barrier Function','$1/x$ Barrier Function','Indicator Function',...
+title('Barrier Functions','Interpreter','latex','Fontsize',20);
+xlabel('$c$','Interpreter','latex','FontSize',20);
+ylabel('$B(c)$','Interpreter','latex','FontSize',20);
+legend('Relaxed Log Barrier Function($\psi=0.1$,$\delta=0.1$)','Log Barrier Function($\psi=0.1$)','$1/x$ Barrier Function','Indicator Function',...
        'Interpreter','latex','Fontsize',15);
-% legend('boxoff')
-axis equal;
+legend('boxoff')
+% axis equal;
 grid off;
 
 %%

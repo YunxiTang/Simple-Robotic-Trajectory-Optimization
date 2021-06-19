@@ -14,7 +14,7 @@ classdef cmsddp_solver < handle
         u_perturb = [],% constrol noise
         Lambda     ,   % dual variabels.      
         Mu         ,   % penalty multipliers. 
-        phi = 2.0,       % penalty scaling parameter
+        phi = 1.5,       % penalty scaling parameter
         Constraint,     % constraints
         ctrst_vil
     end
@@ -183,12 +183,10 @@ classdef cmsddp_solver < handle
                     x0 = xbar{i}(:,1);
                 else
                     %%% Method 1: From Crocoddyl
-                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+%                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
                     
                     %%% Method 2: From Control Toolbox of ETHz
-                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-                    fx = (fx_pre * 2) / 2;
-                    fu = (fu_pre * 2) / 2;
+                    [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + dft(:,i-1);
                 end
@@ -201,7 +199,7 @@ classdef cmsddp_solver < handle
         function [dV,Vx,Vxx,du,K,success] = BackwardPass(obj,rbt,cst,xbar,ubar,dft,params)
             % backward propogation
             success = 1;
-            % dV: tocompute the expected cost reduction
+            % dV: to compute the expected cost reduction
             dV = [0.0, 0.0];
             % initialize Vx, Vxx, du, K
             Vx = cell(obj.M, 1);
@@ -362,7 +360,9 @@ classdef cmsddp_solver < handle
                         obj.Reg = max(obj.Reg*4, 1e-3);
                     end
                 end
-                obj.dual_update(xbar,ubar,params);
+                if mod(obj.iter, 1) == 0
+                    obj.dual_update(xbar,ubar,params);
+                end
                 Vprev = Vbar;
                 
                 % Set regularization back to 0 for next backward pass

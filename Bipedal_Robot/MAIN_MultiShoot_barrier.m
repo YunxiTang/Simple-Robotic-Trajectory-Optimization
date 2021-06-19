@@ -15,21 +15,21 @@ params.dt    = .001;
 params.T     =  0.2;
 params.N     = params.T / params.dt;
 params.shooting_phase = 1;
-params.x0    = [-deg2rad(5);  deg2rad(5); deg2rad(3); [ 1;-1.0;0.0]];
-params.xf    = [ deg2rad(5); -deg2rad(5); deg2rad(3); [-1; 1.0;0.0]];
+params.x0    = [-deg2rad(4);  deg2rad(4); deg2rad(3); [0.8;-0.8;0.0]];
+params.xf    = [ deg2rad(4); -deg2rad(4); deg2rad(0); [0.0; 0.0;0.0]];
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([1;1;1;1;1;1])*1e-3;
-params.R     = eye(params.nu)*1;
-params.Qf    = diag([1;1;1;1;1;1])*500;
+params.Q     = diag([1;1;0;0;0;0])*1;
+params.R     = eye(params.nu)*0.1;
+params.Qf    = diag([1;1;0;0;0;0])*10;
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
-params.umax  = 200;
-params.umin  = -200;
+params.umax  = 40;
+params.umin  = -40;
 params.Debug = 1;           % 1 -> show details
 params.plot = 0;            % 1 -> show plots during optimization
-params.Max_iter = 3000;
-params.stop = 1e-9;
+params.Max_iter = 1000;
+params.stop = 1e-6;
 params.qp = 0;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
@@ -53,9 +53,9 @@ path_constraint_func = @(x,u)([ u(1)-params.umax;
                                 params.umin-u(1);
                                 u(2)-params.umax;
                                 params.umin-u(2);
-                                x(2)-tanh(-x(1));
-                                tanh(-x(1))-x(2);
-                                x(3)-deg2rad(6);
+                                x(2)-(-x(1));
+                                (-x(1))-x(2);
+                                x(3)-deg2rad(10);
                                 deg2rad(0)-x(3);
                                 -ground_clear(x, rbt)]); % <= 0
 
@@ -64,8 +64,8 @@ final_constraint_func = @(xf)([xf(1)-params.xf(1);
                                params.xf(1)-xf(1);
                                xf(2)-params.xf(2);
                                params.xf(2)-xf(2);
-                               xf(3)-params.xf(3);
-                               params.xf(3)-xf(3);
+%                                xf(3)-params.xf(3);
+%                                params.xf(3)-xf(3);
                                ]); % < 0
 
 % cost model
@@ -155,7 +155,11 @@ end
 sln.T = {t};
 sln.Y = {xsol};
 rbt_animate(sln, rbt)
-
+set (gcf,'Position',[400,100,500,500], 'color','w');
+axis off;
+title('$Bipedal \; Walking$','Interpreter','latex','FontSize',25);
+xlabel('$x$','Interpreter','latex','FontSize',20);
+ylabel('$z$','Interpreter','latex','FontSize',20);
 %% \
 X_swf = zeros(params.N+1,1);
 Z_swf = zeros(params.N+1,1);

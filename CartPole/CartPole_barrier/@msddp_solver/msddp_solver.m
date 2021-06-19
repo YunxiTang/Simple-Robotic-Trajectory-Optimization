@@ -1,18 +1,21 @@
 classdef msddp_solver < handle
-    %MSDDPSOLVER multiple shooting DDP solver
-    
+    %MSDDPSOLVER multiple shooting DDP solver (Barrier Function Version) 
     properties
-        M,                  % shooting phase
-        L,                  % length of shooting phase
-        Reg = 0.0 ,         % how much to regularize
-        Reg_Type = 1,       % 1->reg Quu (Default) / 2->reg Vxx
-        eps = 1.0,          % eps: line-search parameter  
+        M,                   % shooting phase
+        L,                   % length of shooting phase
+        Reg = 0.0,          % how much to regularize
+        V_reg = 1e-3,         % how much to regularize
+        Reg_Type = 1,        % 1->reg Quu (Default) / 2->reg Vxx
+        eps = 1.0,           % eps: line-search parameter  
         gamma = 0.01,        % threshold to accept a FW step
-        beta = 0.5,         % for line-search backtracking
-        iter = 0,           % count iterations
-        Jstore = [],        % store full costs
-        J_real = [],        % store real costs
-        Contract_Rate = []  % store constraction rate
+        beta = 0.1,          % for line-search backtracking
+        iter = 1,            % count iterations
+        i_LS = 0,            % count line search iter
+        Jstore = [],         % store full costs
+        J_real = [],         % store real costs
+        Contract_Rate = []   % store constraction rate
+        i_LSm = 10,          % max line search iterations 
+        Cons_Vio = []
     end
     
     methods
@@ -44,14 +47,19 @@ classdef msddp_solver < handle
             obj.iter = obj.iter + 1;
         end
         
+        function [] = Update_Cons_Vio(obj,cons)
+            obj.Cons_Vio = [obj.Cons_Vio cons];
+        end
+        
         function [] = solver_Callback(obj,xbar,ubar,params)
             % For plot
-            nx = params.nx;
-            dft = obj.CalDefect(xbar,params);
+            %nx = params.nx;
+            %dft = obj.CalDefect(xbar,params);
             for i = 1:obj.M
                 clr = [i, 0.5 * i, 0.5 * i] / obj.M;
                 figure(111);
-                plot(xbar{i}(1,:),xbar{i}(2,:),'Color',clr,'LineWidth',2.0);hold on; 
+                plot(xbar{i}(1,:),xbar{i}(2,:),'Color',clr,'LineWidth',2.0);
+                hold on; 
             end
             axis equal;
             title('Phase Portrait','Interpreter','latex','FontSize',20);
@@ -61,7 +69,7 @@ classdef msddp_solver < handle
             for i = 1:obj.M
                 clr = [i, 0.5 * i, 0.5 * i] / obj.M;
                 figure(222);
-                plot(params.t{i}(1,1:end-1),ubar{i}(:,1:end-1),'Color',clr,'LineWidth',2.0);hold on; 
+                plot(params.t{i}(1,1:end-1),ubar{i}(:,1:end),'Color',clr,'LineWidth',2.0);hold on; 
             end
             title('Control Input','Interpreter','latex','FontSize',20);
             grid on;
@@ -69,8 +77,9 @@ classdef msddp_solver < handle
             
         end
         
-        function [J_idx,Jr_idx,xsol,usol] = simulate_phase(obj,rbt,cst,path_constraint,final_constraint,params,idx,x0,xbar,ubar,du,K)
+        function [J_idx,Jr_idx,xsol,usol,max_cons] = simulate_phase(obj,rbt,cst,path_constraint,final_constraint,params,idx,x0,xbar,ubar,du,K)
             % simulate each inter-phase
+            max_cons = 0;
             xref = params.xf;
             uref = zeros(params.nu, 1);
             alpha = obj.eps;
@@ -84,6 +93,14 @@ classdef msddp_solver < handle
                 dxi = xi - xbar(:,i);
                 % Update with stepsize and feedback
                 ui = ubar(:,i) + alpha*(du(:,i)) + K(:,:,i)*dxi;
+                
+                % clamp the control input
+                if params.clamp == 1
+                    lb = params.umin * ones(params.nu, 1);
+                    ub = params.umax * ones(params.nu, 1);
+                    % clamp the control input
+                    ui = max(lb, min(ub, ui));
+                end
                 usol(:,i) = ui;
                 
                 % Sum up costs
@@ -92,7 +109,15 @@ classdef msddp_solver < handle
                 
                 % Propagate dynamics
                 xi = rbt.rk(xi, ui, params.dt);
-                if isnan(xi)
+                % constraint violation
+                c_i = path_constraint.c(xi, ui);
+                if any(c_i > 0)
+                    max_cons = max(max(c_i), max_cons);
+                end
+                if norm(xi,2) > 1e3
+                    % FP go unstable, stop the rollout.
+                    % keep the x-u trajectories the same
+                    % as last iteration
                     xsol = xbar;
                     usol = ubar;
                     J_idx = 1e10;
@@ -104,30 +129,33 @@ classdef msddp_solver < handle
             J_idx = J_idx + (cst.lf_cost(xsol(:,end))+final_constraint.penalty(xsol(:,end)))*(idx==obj.M);
         end
        
-        function [J,Jr,xbar,ubar] = Init_Forward(obj,rbt,cst,path_constraint,final_constraint,params)
+        function [J,Jr,xbar,ubar,Max_cons] = Init_Forward(obj,rbt,cst,path_constraint,final_constraint,params)
             % init forward simulation
+            Max_cons = 0.0;
             xbar = cell(obj.M, 1);
             ubar = cell(obj.M, 1);
             J = 0;
             Jr = 0;
             if isfield(params, {'x_warm','u_warm'})
+                % utilize the warm-start trajectories
                 xbar = params.x_warm;
                 ubar = params.u_warm;
             else
                 for k = 1:obj.M
                     % make initial guess of intermediate states
                     xbar{k} = kron(ones(1, obj.L), params.xf);
-                    ubar{k} = zeros(params.nu, obj.L);
+                    ubar{k} = -ones(params.nu, obj.L-1);
                     xbar{k}(:,1) = params.x0 + (k-1) * (params.xf - params.x0) ./ obj.M;
                 end
             end
-            du = zeros(params.nu, obj.L);
-            K  = zeros(params.nu, params.nx, obj.L);
+            du = zeros(params.nu, obj.L-1);
+            K  = zeros(params.nu, params.nx, obj.L-1);
             for i=1:obj.M
                 x0 = xbar{i}(:,1);
-                [J_idx,Jr_idx,xbar{i},ubar{i}] = obj.simulate_phase(rbt,cst,path_constraint,final_constraint,params,i,x0,xbar{i},ubar{i},du,K);
+                [J_idx,Jr_idx,xbar{i},ubar{i},max_cons] = obj.simulate_phase(rbt,cst,path_constraint,final_constraint,params,i,x0,xbar{i},ubar{i},du,K);
                 J = J + J_idx;
                 Jr = Jr + Jr_idx;
+                Max_cons = max(Max_cons,max_cons);
             end
             obj.J_pushback(J);
             obj.Jreal_pushback(Jr);
@@ -135,15 +163,16 @@ classdef msddp_solver < handle
         
         
         function [dft] = CalDefect(obj,xbar,params)
-            % compute all the defects
+            % compute the defects
             dft = zeros(params.nx, params.shooting_phase-1);
             for i = 1:obj.M-1
                 dft(:,i) = xbar{i}(:,end) - xbar{i+1}(:,1);
             end
         end
         
-        function [J,Jr,x,u] = ForwardPass(obj,rbt,cst,path_constraint,final_constraint,params,xbar,ubar,du,K)
+        function [J,Jr,x,u,Max_cons] = ForwardPass(obj,rbt,cst,path_constraint,final_constraint,params,xbar,ubar,du,K)
             % foward simulation
+            Max_cons = 0;
             x = cell(obj.M, 1);
             u = cell(obj.M, 1);
             J = 0;
@@ -155,6 +184,7 @@ classdef msddp_solver < handle
                 x{k} = 0 * xbar{k};
                 u{k} = 0 * ubar{k};
             end
+            
             for i=1:obj.M
                 if i == 1
                     xbar{i}(:,1) = xbar{i}(:,1);
@@ -168,19 +198,21 @@ classdef msddp_solver < handle
 %                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
 %                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
                 end
-                [J_idx,Jr_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,path_constraint,final_constraint,params,i,x0,xbar{i},ubar{i},du{i},K{i});
+                [J_idx,Jr_idx,x{i},u{i},max_cons] = obj.simulate_phase(rbt,cst,path_constraint,final_constraint,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
                 Jr = Jr + Jr_idx;
+                Max_cons = max(Max_cons,max_cons);
             end
             
         end
         
-        function [dV,Vx,Vxx,du,K,success] = BackwardPass(obj,rbt,cst,path_constraint,final_constraint,xbar,ubar,dft,params)
+        function [dV,Vx,Vxx,du,K,Grad,success] = BackwardPass(obj,rbt,cst,path_constraint,final_constraint,xbar,ubar,dft,params)
             % backward propogation
             success = 1;
+            Grad  = [];
             xref = params.xf;
             uref = zeros(params.nu, 1);
-            % dV: tocompute the expected cost reduction
+            % dV: to compute the expected cost reduction
             dV = [0.0, 0.0];
             % initialize Vx, Vxx, du, K
             Vx = cell(obj.M, 1);
@@ -188,8 +220,8 @@ classdef msddp_solver < handle
             du = cell(obj.M,1);
             K = cell(obj.M,1);
             for i = 1:obj.M
-                du{i} = zeros(params.nu, obj.L);
-                K{i} = zeros(params.nu, params.nx, obj.L);
+                du{i} = zeros(params.nu, obj.L-1);
+                K{i} = zeros(params.nu, params.nx, obj.L-1);
                 Vx{i} = zeros(params.nx, obj.L);
                 Vxx{i} = zeros(params.nx, params.nx, obj.L);
             end
@@ -215,17 +247,18 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qcs_info(rbt,cst,x_ij,u_ij,xref,uref,Vx_ij,Vxx_ij,params,path_constraint);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qcs_info(rbt,cst,x_ij,u_ij,xref,uref,Vx_ij,Vxx_ij,params,path_constraint,obj.V_reg);
+                    Grad = [Grad norm(Qu,2)];
                     % regularization
                     Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
-                    [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-9);
+                    [~, FLAG] = chol(Quu_reg-eye(params.nu)*1e-6);
                     if FLAG > 0 
                         % Quu is not PD, then increase Reg factor until Quu
                         % is PD
                         success = 0;
                         if params.Debug == 1
-                            fprintf(' \t \t [SubSubInfo]: Reg=%5f:  Regularization <-- Increase Reg. \n', obj.Reg);
+                            fprintf(' \t \t [SubSubInfo]: Non PD Qxx! Reg=%5f.\n', obj.V_reg);
                         end
                         return
                     end
@@ -245,7 +278,7 @@ classdef msddp_solver < handle
                         end
                     else
                         % without boxQP 
-                        % more numerical stable
+                        % use cholesky decomposition, more numerical stable
                         [R, ~] = chol(Quu_reg);
                         kff = -R\(R'\Qu);
                         kfb = -R\(R'\Qux_hat);
@@ -262,97 +295,134 @@ classdef msddp_solver < handle
                 end
             end
             if params.Debug == 1
-                fprintf('\t \t [SubInfo]: Reg=%5f\n',obj.Reg);
+                fprintf('\t \t [SubInfo]: Reg=%5f\n',obj.V_reg);
             end
         end
         
-        function [V,Vr,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,DV,rbt,cst,path_constraint,final_constraint,params)
+        function [V,Vr,x,u,max_cons,Flag] = ForwardIteration(obj,xbar,ubar,Vprev,consprev,du,K,DV,rbt,cst,path_constraint,final_constraint,params)
             % Check the Forward Pass is accepted or not (IMPORTANT!!!)
             % if not, adjust the line-search factor  (Armijo backtracking
             % line search)
             V = 0;
             Vr = 0;
             obj.eps = 1.0;
+            Flag = 1;
             alpha = obj.eps;
-            while alpha > 1e-5
+            while alpha > 1e-3
                 % Try a step
                 alpha = obj.eps;
-                [V,Vr,x,u] = obj.ForwardPass(rbt,cst,path_constraint,final_constraint,params,xbar,ubar,du,K);
+                [V,Vr,x,u,max_cons] = obj.ForwardPass(rbt,cst,path_constraint,final_constraint,params,xbar,ubar,du,K);
                 dV = alpha * DV(1) + alpha^2 * DV(2);
                 ratio = (V - Vprev)/(dV);
                 if params.Debug == 1
-                    fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...
-                          alpha,V-Vprev, dV,ratio);
+                    fprintf(' \t \t \t LS=%.3e \t AR=%.3e \t ER=%.3e \t Ratio=%.3e\n',...
+                              alpha,V-Vprev, dV,ratio);
                 end
                 if obj.iter == 0
                     break
                 end
-                if dV < 0 && V < Vprev + obj.gamma * dV
+                if dV < 0 && V < Vprev + obj.gamma * dV && max_cons <= 1.2* consprev
                     break
-                end
-                if dV >= 0 && ratio < 5
+                elseif dV >= 0 && V < Vprev + 2 * dV && max_cons <= 1.2* consprev
                     break
                 end
                 % Else, do backtracking
                 obj.eps = obj.beta * obj.eps;
             end
-            if alpha <= 1e-5
+            if alpha <= 1e-3
                 V = Vprev;
                 x = xbar;
                 u = ubar;
-                ratio = 1;
-            end
-            obj.J_pushback(V);
-            obj.Jreal_pushback(Vr);
-            obj.Rate_pushback(ratio);
-            if params.plot == 1 && mod(obj.iter,1) == 0
-               obj.solver_Callback(x,u,params);
+                Flag = 0;
             end
         end
         
-        function [xsol, usol, Ksol] = Solve(obj,rbt,cst,path_constraint,final_constraint,params)
+        function [xsol, usol, Ksol, xbar, ubar] = Solve(obj,rbt,cst,path_constraint,final_constraint,params)
             % solve OCP
             % init rolling out
-            [Vbar,Vr,xbar,ubar] = obj.Init_Forward(rbt,cst,path_constraint,final_constraint,params);
-            
+            [Vbar,~,xbar,ubar,max_cons] = obj.Init_Forward(rbt,cst,path_constraint,final_constraint,params);
+            consprev = max_cons;
             % plot initial trajectories
             if params.plot == 1
                 obj.solver_Callback(xbar,ubar,params);
             end
             [dft] = obj.CalDefect(xbar,params);
+            
             while obj.iter <= params.Max_iter
-                success = 0;
-                % run backward pass
-                while success == 0 
-                    [dV,~,~,du,K,success] = obj.BackwardPass(rbt,cst,path_constraint,final_constraint,xbar,ubar,dft,params);
-                    obj.Reg = max(obj.Reg * 2, 1e-3);
-                end
-                Vprev = Vbar;
-                Vr_prev = Vr;
                 if params.Debug == 1
-                    fprintf('[INFO]: Iteration %3d   ||  Cost %.12e \n',obj.iter,Vbar);
+                    fprintf('[INFO]: Iter. %3d   ||  Cost %.12e ||  Cons. Vio. %.12e\n',obj.iter, Vbar, max_cons);
                 end
-                % Set regularization back to 0 for next backward pass
-                obj.Reg = 0.0;
-                %%% Forward Pass
-                [Vbar,Vr,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,path_constraint,final_constraint,params);
                 
+                % Set regularization back to 0 for next backward pass
+                obj.V_reg = 1e-6;
+                obj.Reg = 1 / (exp(2*obj.iter)-2);
+                % run backward pass
+                [dV,~,~,du,K,Grad,success] = obj.BackwardPass(rbt,cst,path_constraint,final_constraint,xbar,ubar,dft,params);
+                
+                Vprev = Vbar;
+                
+                %%% Forward Pass
+                [Vbar,Vr,xbar,ubar,max_cons,Flag] = obj.ForwardIteration(xbar,ubar,Vprev,consprev,du,K,dV,rbt,cst,path_constraint,final_constraint,params);
+
+                DELTA = 5;
+                DELTA0 = 5;
+                
+                obj.i_LS = 0;
+                while (Flag == 0 || success == 0) && obj.i_LS <= obj.i_LSm
+                    DELTA = max(DELTA0, DELTA * DELTA0);
+%                     obj.V_reg = max(1e-6, obj.V_reg * DELTA);
+                    obj.V_reg = 100 * obj.V_reg;
+                    obj.i_LS = obj.i_LS + 1;
+                    if obj.V_reg > 1e3
+                          path_constraint.update_t();
+                          final_constraint.update_t();
+                          if params.Debug == 1
+                            disp('~~~~~~~~~~~~~~~~LS & Reg Fialed. Update RLB.~~~~~~~~~~~~~~~~~~~');
+                          end
+                          [Vbar,Vr,xbar,ubar,max_cons] = obj.ForwardPass(rbt,cst,path_constraint,final_constraint,params,xbar,ubar,du,K);
+                          Vprev = Vbar;
+                          obj.V_reg = 1e-6;
+                          DELTA = 5;
+                          continue
+                    end
+                    [dV,~,~,du,K,Grad,success] = obj.BackwardPass(rbt,cst,path_constraint,final_constraint,xbar,ubar,dft,params);
+                    [Vbar,Vr,xbar,ubar,max_cons,Flag] = obj.ForwardIteration(xbar,ubar,Vprev,consprev,du,K,dV,rbt,cst,path_constraint,final_constraint,params); 
+                end
+                
+                if params.plot == 1 && mod(obj.iter,1) == 0
+                    obj.solver_Callback(xbar,ubar,params);
+                end
                 [dft] = obj.CalDefect(xbar,params);
                 V_change = Vprev - Vbar;
-                Vr_change = Vr_prev - Vr;
                 DU = cell2mat(du);
-                DU = reshape(DU,(params.nu*params.shooting_phase*obj.L),1);
-                if (V_change < params.stop || abs(Vr_change) < params.stop) && obj.iter > 10 
-                    fprintf('[INFO]: Value Function Converge!');
-                    break
-                elseif all(DU<=0.001) && obj.iter > 10
-                    fprintf('[INFO]: Policy Function Converge!');
-                    break
+                DU = reshape(DU,(params.nu*params.shooting_phase*(obj.L-1)),1);
+                
+                % Check the exit criteria
+                if obj.iter > 2
+                    if ((V_change) < params.stop) && max_cons <= 1e-6
+                        fprintf('[INFO]: Value Function Converge!');
+                        break
+                    elseif all(DU<=1e-3) && max_cons <= 1e-6
+                        fprintf('[INFO]: Policy Function Converge!');
+                        break
+                    elseif max(Grad)<=1e-8  && max_cons <= 1e-6
+                        fprintf('[INFO]: Gradient Converge!');
+                        break
+                    elseif consprev - max_cons < 0.0
+                        fprintf('[INFO]: Const. Satisfication!');
+                        break
+                    end
                 end
+                obj.J_pushback(Vbar);
+                obj.Jreal_pushback(Vr);
                 obj.Update_iter();
-                if  V_change <= 1e-3 %mod(obj.iter, 1)==0
+                obj.Update_Cons_Vio(max_cons);
+                consprev = max_cons;
+                % Update RLB functions
+                if  (V_change) < 0.1 %mod(obj.iter, 10)==0
                     path_constraint.update_t();
                     final_constraint.update_t();
+                    disp('~~~~~~~~~~~~~~~~Update RLB.~~~~~~~~~~~~~~~~~~~');
                 end
             end
             [xsol, usol, Ksol] = obj.assemble_solution(xbar, ubar, K, params);
@@ -360,27 +430,26 @@ classdef msddp_solver < handle
         
         function [xsol, usol, Ksol] = assemble_solution(obj, xbar, ubar, K, params)
             %%% Assemble the final solution
-            %%% assemble the final solution
             xsol = zeros(params.nx, params.N+1);
             usol = zeros(params.nu, params.N);
             Ksol = zeros(params.nu, params.nx, params.N);
             if 1 < params.shooting_phase
                 xsol(:,1:obj.L-1) = xbar{1}(:,1:(end-1));
-                usol(:,1:obj.L-1) = ubar{1}(:,1:(end-1)); 
-                Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
+                usol(:,1:obj.L-1) = ubar{1}(:,1:(end)); 
+                Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end));
                 for k=2:params.shooting_phase                
                     if k < params.shooting_phase
                         xsol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = xbar{k}(:,1:(end-1));
                     end
-                    usol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = ubar{k}(:,1:(end-1));
-                    Ksol(:,:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = K{k}(:,:,1:(end-1));
+                    usol(:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = ubar{k}(:,1:(end));
+                    Ksol(:,:,(k-1)*(obj.L-1)+1:(k*(obj.L-1))) = K{k}(:,:,1:(end));
                 end
                 Me = params.shooting_phase;
                 xsol(:,(Me-1)*(obj.L-1)+1:(Me*(obj.L-1)+1)) = xbar{k};
             else
                 xsol = xbar{1};
-                usol = ubar{1}(:,1:(end-1));
-                Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end-1));
+                usol = ubar{1}(:,1:(end));
+                Ksol(:,:,1:(obj.L-1)) = K{1}(:,:,1:(end));
             end  
         end
     end

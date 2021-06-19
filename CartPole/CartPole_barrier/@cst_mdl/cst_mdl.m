@@ -30,7 +30,7 @@ classdef cst_mdl < handle
        [l,lx,lu,lxx,lux,lxu,luu] = l_info(in1,in2,in3,in4);
        [lf,lfx,lfxx] = lf_info(in1);
        [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = Q_info(rbt,cst,x,u,Vx,Vxx,params,iter);
-       [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = Qcs_info(rbt,cst,x,u,xref,uref,Vx,Vxx,params,cons)
+       [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = Qcs_info(rbt,cst,x,u,xref,uref,Vx,Vxx,params,cons,V_reg)
     end
 end
 

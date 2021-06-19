@@ -59,7 +59,7 @@ classdef ddp_solver < handle
             % Make initial Guess of Trajectory
             for i = 1:(params.N-1)
                 % Option 1: PD Control
-                ui = -[1 1 1 1;1 1 1 1] * (xi - params.xf);
+                ui = -0*[1 1 1 1;1 1 1 1] * (xi - params.xf);
                 % Option 2: Zero Control
 %                 ui = zeros(params.nu,1);
                 % Option 3: Random Control
