@@ -14,7 +14,7 @@ classdef cmsddp_solver < handle
         u_perturb = [],% constrol noise
         Lambda     ,   % dual variabels.      
         Mu         ,   % penalty multipliers. 
-        phi = 10,       % penalty scaling parameter
+        phi = 2,       % penalty scaling parameter
         Constraint,     % constraints
         ctrst_vil
     end
@@ -31,7 +31,7 @@ classdef cmsddp_solver < handle
             obj.Mu = cell(obj.M,1);
             obj.Lambda = cell(obj.M, 1);
             for k = 1:obj.M
-                obj.Mu{k} = 5 * ones(constraint.n_ineq, obj.L);
+                obj.Mu{k} = 1 * ones(constraint.n_ineq, obj.L);
                 obj.Lambda{k} = zeros(constraint.n_ineq, obj.L);
             end
         end
@@ -188,14 +188,12 @@ classdef cmsddp_solver < handle
                     x0 = xbar{i}(:,1);
                 else
                     %%% Method 1: From Crocoddyl
-                    x0 = x{i-1}(:,end) -  new_dft(:,i-1);
+%                     x0 = x{i-1}(:,end) -  new_dft(:,i-1);
                     
                     %%% Method 2: From Control Toolbox of ETHz
-                    [fx_pre, fu_pre] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
-                    fx = (fx_pre * 2) / 2;
-                    fu = (fu_pre * 2) / 2;
+                    [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end));
                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-%                     x0 = xbar{i}(:,1) +  (1.0) * (tilda) + dft(:,i-1);
+                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -207,7 +205,7 @@ classdef cmsddp_solver < handle
             % backward propogation
             success = 1;
             % dV: tocompute the expected cost reduction
-            dV = 0.0;
+            dV = [0.0,0.0];
             % initialize Vx, Vxx, du, K
             Vx = cell(obj.M, 1);
             Vxx = cell(obj.M, 1);
@@ -285,10 +283,10 @@ classdef cmsddp_solver < handle
                     K{i}(:,:,j) = kfb;
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
                     Vxx{i}(:,:,j) = Qxx + Qxu*kfb + kfb'*Qux + kfb'*Quu*kfb;
-                    alpha = obj.eps;
                     delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
                     delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
-                    dV = dV + alpha * delta1 + 1/2*alpha^2*delta2;
+                    dV(1) = dV(1) + delta1;
+                    dV(2) = dV(2) + 1/2*delta2;
                 end
                 
                 if success == 0
@@ -300,7 +298,7 @@ classdef cmsddp_solver < handle
             end
         end
         
-        function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,dV,rbt,cst,params)
+        function [V,x,u] = ForwardIteration(obj,xbar,ubar,Vprev,du,K,DV,rbt,cst,params)
             % Check the Forward Pass is accepted or not (IMPORTANT!!!)
             % if not, adjust the line-search factor  (Armijo backtracking
             % line search)
@@ -311,6 +309,7 @@ classdef cmsddp_solver < handle
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,params,xbar,ubar,du,K);
+                dV = alpha * DV(1) + alpha^2 * DV(2);
                 ratio = (V - Vprev)/(dV);
                 if params.Debug == 1
                     fprintf(' \t \t \t Alpha=%.3e \t Actual Reduction=%.3e \t Expected Reduction=%.3e \t Ratio=%.3e\n',...

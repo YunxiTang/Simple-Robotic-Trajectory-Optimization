@@ -6,10 +6,10 @@ clear; clc;
 rbt = Car();
 
 %% params for optimization
-params.T = 5.0;
+params.T = 3.0;
 params.ulb = [-4.5;-4.5];
 params.uub = [ 4.5; 4.5];
-params.N = 250;
+params.N = 150;
 params.Q = eye(rbt.Nx);
 params.Qf = 250 * eye(rbt.Nx);
 params.R = 0.1 * eye(rbt.Nu);

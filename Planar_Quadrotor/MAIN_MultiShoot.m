@@ -14,7 +14,7 @@ log = 0;
 params.dt    = .01;
 params.T     = 4.0;
 params.N     = params.T / params.dt;
-params.shooting_phase = 100;
+params.shooting_phase = 10;
 params.x0    = [4.0; 0.0; -0.8; 0.0; 0.0; 0.0];
 params.xf    = [0.0; 0.0; 0.0; 0.0; 0.0; 0.0];
 params.nx    = numel(params.x0);
@@ -23,7 +23,7 @@ params.Q     = diag([0.1 0.1 0.1 0.1 0.1 0.1])*5;
 params.R     = diag([0.1 0.1])*20;
 params.Qf    = diag([50 50 50 50 50 50]);
 params.Rf    = eye(params.nu);
-params.Reg_Type = 1.0;                    % 1->reg of Quu  / 2->reg of Vxx
+params.Reg_Type = 2;                    % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 4.4;
 params.umin  = 1.0;
 params.Debug = ~log;     % 1 -> show details
@@ -60,6 +60,7 @@ tstart = tic;
 [xsol, usol, Ksol] = solver.Solve(planar_quad,cost,params);
 telapsed = toc(tstart);
 
+%%
 figure(888);
 plot(solver.Jstore,'b-o','LineWidth',2.0);
 J_hist = solver.Jstore;

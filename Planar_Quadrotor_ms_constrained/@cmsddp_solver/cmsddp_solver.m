@@ -14,7 +14,7 @@ classdef cmsddp_solver < handle
         u_perturb = [],% constrol noise
         Lambda     ,   % dual variabels.      
         Mu         ,   % penalty multipliers. 
-        phi = 1.5,       % penalty scaling parameter
+        phi = 2.0,       % penalty scaling parameter
         Constraint,     % constraints
         ctrst_vil
     end
@@ -31,7 +31,7 @@ classdef cmsddp_solver < handle
             obj.Mu = cell(obj.M,1);
             obj.Lambda = cell(obj.M, 1);
             for k = 1:obj.M
-                obj.Mu{k} = 1 * ones(constraint.n_ineq, obj.L);
+                obj.Mu{k} = 10 * ones(constraint.n_ineq, obj.L);
                 obj.Lambda{k} = zeros(constraint.n_ineq, obj.L);
             end
         end

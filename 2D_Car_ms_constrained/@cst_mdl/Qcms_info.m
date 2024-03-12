@@ -1,7 +1,7 @@
 function [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = Qcms_info(rbt,cst,constraint,lambda,Imu,x,u,Vx,Vxx,params,iter)
 %Qms_INFO : For constrained multiple shooting DDP/SLQ
 
-reg = 1.0 / exp(iter);
+reg = 0.05;%1.0 / exp(iter);
 nx = params.nx;
 Vxx_hat = Vxx + reg * eye(nx) * (params.Reg_Type == 2);
 

@@ -15,21 +15,21 @@ params.dt    = .001;
 params.T     =  0.2;
 params.N     = params.T / params.dt;
 params.shooting_phase = 1;
-params.x0    = [-deg2rad(10);  deg2rad(10); deg2rad(5); [1.8343;0.3485;0.5153]];
-params.xf    = [ deg2rad(10); -deg2rad(10); deg2rad(5); [1.8343;0.3485;0.5153]/2];
+params.x0    = [-deg2rad(5);  deg2rad(5); deg2rad(3); [ 1;-1.0;0.0]];
+params.xf    = [ deg2rad(5); -deg2rad(5); deg2rad(3); [-1; 1.0;0.0]];
 params.nx    = numel(params.x0);
 params.nu    = 2;
-params.Q     = diag([1;1;1;0.00;0.00;0.00])*1;
+params.Q     = diag([1;1;1;1;1;1])*1e-3;
 params.R     = eye(params.nu)*1;
-params.Qf    = diag([1;1;1;0.00;0.00;0.00])*5;
+params.Qf    = diag([1;1;1;1;1;1])*500;
 params.Rf    = eye(params.nu);
 params.Reg_Type = 2;        % 1->reg of Quu  / 2->reg of Vxx
 params.umax  = 200;
 params.umin  = -200;
 params.Debug = 1;           % 1 -> show details
-params.plot = 1;            % 1 -> show plots during optimization
-params.Max_iter = 500;
-params.stop = 1e-4;
+params.plot = 0;            % 1 -> show plots during optimization
+params.Max_iter = 3000;
+params.stop = 1e-9;
 params.qp = 0;
 nt = params.T / params.shooting_phase;
 tax = cell(params.shooting_phase,1);
@@ -49,15 +49,15 @@ rbt = Bipedal();
 
 %%% wrap up the constraints as a whole function handle
 % path constraint
-
 path_constraint_func = @(x,u)([ u(1)-params.umax;
                                 params.umin-u(1);
                                 u(2)-params.umax;
                                 params.umin-u(2);
                                 x(2)-tanh(-x(1));
                                 tanh(-x(1))-x(2);
-                                x(3)-deg2rad(10);
-                                deg2rad(0)-x(3)]); % <= 0
+                                x(3)-deg2rad(6);
+                                deg2rad(0)-x(3);
+                                -ground_clear(x, rbt)]); % <= 0
 
 % TO DO: add final state constraint here
 final_constraint_func = @(xf)([xf(1)-params.xf(1);

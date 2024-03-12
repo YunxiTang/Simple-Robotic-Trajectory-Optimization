@@ -9,7 +9,7 @@ rbt = planar_quadrotor();
 params.T = 6.0;
 params.ulb = [ 0.1; 0.1];
 params.uub = [ 5.0; 5.0];
-params.N = 300;
+params.N = 100;
 params.Q                = diag([1 1 1 1 1 1]);
 params.R                = diag([0.1 0.1]);
 params.Qf               = diag([5 5 5 5 5 5])*10;
@@ -19,7 +19,7 @@ params.xf               = [1.0; 1.5; 0.0; 0.0; 0.0; 0.0];
 % obstacles
 params.Obstacles = [2.0 3.0 4.0;
                     2.0 1.0 2.0;
-                    0.4 0.5 0.4];
+                    0.6 0.5 0.6];
 %% set up function handles
 OptDynamics = @(t,x,u)(DynamicsWrapper(t,x,u,@(t,x,u)rbt.Dynamics(t,x,u)));
 

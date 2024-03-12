@@ -162,7 +162,7 @@ classdef msddp_solver < handle
                     %%% Method 2: From Control Toolbox of ETHz
                     [fx, fu] = rbt.getLinSys(xbar{i-1}(:,end),ubar{i-1}(:,end), params.dt);
                     tilda = (fx + fu * K{i-1}(:,:,end)) * ((x{i-1}(:,end) - xbar{i-1}(:,end))) + fu * obj.eps * du{i-1}(:,end);
-                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + 1.0 * dft(:,i-1);
+                    x0 = xbar{i}(:,1) +  (1.0) * (tilda) + obj.eps * dft(:,i-1);
                 end
                 [J_idx,x{i},u{i}] = obj.simulate_phase(rbt,cst,path_constraint,final_constraint,params,i,x0,xbar{i},ubar{i},du{i},K{i});
                 J = J + J_idx;
@@ -210,7 +210,7 @@ classdef msddp_solver < handle
                     u_ij = ubar{i}(:,j);
                     Vx_ij = Vx{i}(:,j+1);
                     Vxx_ij = Vxx{i}(:,:,j+1);
-                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qcs_info(rbt,cst,x_ij,u_ij,xref,uref,Vx_ij,Vxx_ij,params,path_constraint);
+                    [Qx,Qu,Qxx,Quu,Qux,Qxu,Quu_hat,Qux_hat] = cst.Qcs_info(rbt,cst,x_ij,u_ij,xref,uref,Vx_ij,Vxx_ij,params,path_constraint,gap);
                     % regularization
                     Quu_reg = Quu_hat + eye(params.nu)*obj.Reg;
                     % Make sure Quu is PD, if not, exit and increase regularization
@@ -250,8 +250,8 @@ classdef msddp_solver < handle
                     
                     Vx{i}(:,j)  = Qx + kfb'*Quu*kff + kfb'*Qu + Qxu*kff ;
                     Vxx{i}(:,:,j) = Qxx + Qxu*kfb + kfb'*Qux + kfb'*Quu*kfb;
-                    delta1 = kff'*Qu + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
-                    delta2 = kff'*Quu*kff + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
+                    delta1 = kff'*Qu;% + gap'*(Vx{i}(:,j) - Vxx{i}(:,:,j)*x_ij);
+                    delta2 = kff'*Quu*kff;% + gap'*(2*Vxx{i}(:,:,j)*x_ij-Vxx{i}(:,:,j)*gap);
                     dV(1) = dV(1) + delta1;
                     dV(2) = dV(2) + 1/2 * delta2;
                 end
@@ -268,7 +268,7 @@ classdef msddp_solver < handle
             V = 0;
             obj.eps = 1.0;
             alpha = obj.eps;
-            while alpha > 1e-7
+            while alpha > 1e-5
                 % Try a step
                 alpha = obj.eps;
                 [V,x,u] = obj.ForwardPass(rbt,cst,path_constraint,final_constraint,params,xbar,ubar,du,K);
@@ -307,6 +307,7 @@ classdef msddp_solver < handle
                 obj.solver_Callback(xbar,ubar,params);
             end
             [dft] = obj.CalDefect(xbar,params);
+            
             while obj.iter <= params.Max_iter
                 success = 0;
                 % run backward pass
@@ -325,11 +326,16 @@ classdef msddp_solver < handle
                 [Vbar,xbar,ubar] = obj.ForwardIteration(xbar,ubar,Vprev,du,K,dV,rbt,cst,path_constraint,final_constraint,params);
                 
                 [dft] = obj.CalDefect(xbar,params);
+                norm(dft)
                 change = Vprev - Vbar;
                 DU = cell2mat(du);
                 DU = reshape(DU,(params.nu*params.shooting_phase*obj.L),1);
-                if (change) < params.stop && obj.iter > 5 || all(DU<1e-3)
+                if (change) < params.stop && obj.iter > 5
+                    fprintf('[INFO]: Value Function Converge. \n');
                     break
+                elseif norm((DU)) < 1e-2
+                    fprintf('[INFO]: Action Function Converge. \n');
+                    break  
                 end
                 obj.Update_iter();
                 if mod(obj.iter, 1)==0
